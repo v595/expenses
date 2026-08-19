@@ -7,6 +7,7 @@ from app.models import user as user_model
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD_LENGTH = 6
+MAX_AVATAR_LENGTH = 2_800_000  # ~2MB image, base64-encoded
 
 
 class AuthError(Exception):
@@ -25,6 +26,7 @@ def to_public_user(user):
         "name": user["name"],
         "email": user["email"],
         "created_at": user["created_at"],
+        "avatar": user["avatar"] if "avatar" in user.keys() else None,
     }
 
 
@@ -79,6 +81,40 @@ def login(data):
     user_model.set_user_token(user["id"], token)
 
     return to_public_user(user), token
+
+
+def update_profile(user, data):
+    if not isinstance(data, dict):
+        raise AuthError("Request body must be a JSON object", 400)
+
+    updated = user
+
+    name = data.get("name")
+    if name is not None:
+        if not isinstance(name, str) or not name.strip():
+            raise AuthError("Name cannot be empty", 400)
+        updated = user_model.update_name(user["id"], name.strip())
+
+    avatar = data.get("avatar")
+    if avatar is not None:
+        if not isinstance(avatar, str) or not avatar.startswith("data:image/"):
+            raise AuthError("Avatar must be an image", 400)
+        if len(avatar) > MAX_AVATAR_LENGTH:
+            raise AuthError("Image is too large (max ~2MB)", 400)
+        updated = user_model.update_avatar(user["id"], avatar)
+
+    new_password = data.get("new_password")
+    if new_password is not None:
+        current_password = data.get("current_password")
+        if not isinstance(current_password, str) or not check_password_hash(
+            user["password_hash"], current_password
+        ):
+            raise AuthError("Current password is incorrect", 401)
+        if not isinstance(new_password, str) or len(new_password) < MIN_PASSWORD_LENGTH:
+            raise AuthError(f"New password must be at least {MIN_PASSWORD_LENGTH} characters", 400)
+        user_model.update_password(user["id"], generate_password_hash(new_password))
+
+    return to_public_user(updated)
 
 
 def logout(user):

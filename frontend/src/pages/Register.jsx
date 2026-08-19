@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 
@@ -27,30 +27,38 @@ function Register() {
 
   return (
     <div className="page page-narrow">
-      <h1>Register</h1>
-      {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <label>
-          Name
-          <input type="text" name="name" value={form.name} onChange={handleChange} required />
-        </label>
-        <label>
-          Email
-          <input type="email" name="email" value={form.email} onChange={handleChange} required />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            minLength={6}
-          />
-        </label>
-        <button type="submit">Register</button>
-      </form>
+      <div className="card card-padded">
+        <div className="page-header">
+          <h1>Create an account</h1>
+          <p>Start tracking your income and expenses.</p>
+        </div>
+        {error && <p className="error-message">{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <label>
+            Name
+            <input type="text" name="name" value={form.name} onChange={handleChange} required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" value={form.email} onChange={handleChange} required />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              minLength={6}
+            />
+          </label>
+          <button type="submit">Register</button>
+        </form>
+        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "1rem" }}>
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -42,6 +42,31 @@ def get_user_by_token(token):
     return dict(row) if row else None
 
 
+def update_name(user_id, name):
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET name = ? WHERE id = ?", (name, user_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return dict(row)
+
+
+def update_avatar(user_id, avatar):
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET avatar = ? WHERE id = ?", (avatar, user_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return dict(row)
+
+
+def update_password(user_id, password_hash):
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, user_id))
+    conn.commit()
+    conn.close()
+
+
 def set_user_token(user_id, token):
     conn = get_db_connection()
     conn.execute("UPDATE users SET token = ? WHERE id = ?", (token, user_id))

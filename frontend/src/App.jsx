@@ -4,7 +4,9 @@ import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import Register from "./pages/Register";
+import Reports from "./pages/Reports";
 import Transactions from "./pages/Transactions";
 
 // Wraps a page so it's only reachable when logged in; otherwise bounce to /login.
@@ -32,9 +34,49 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
+      <Route
+        path="/reports"
+        element={
+          <RequireAuth>
+            <Reports />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        }
+      />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
     </Routes>
+  );
+}
+
+// The sidebar layout only makes sense once logged in; logged-out pages
+// (login/register) get a plain top bar instead of a side-by-side shell.
+function Layout() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Navbar />
+        <AppRoutes />
+      </>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <Navbar />
+      <div className="main-content">
+        <AppRoutes />
+      </div>
+    </div>
   );
 }
 
@@ -42,8 +84,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Navbar />
-        <AppRoutes />
+        <Layout />
       </AuthProvider>
     </BrowserRouter>
   );

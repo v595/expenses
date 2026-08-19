@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { IconPlus } from "./icons";
+
 const EMPTY_FORM = {
   amount: "",
   type: "expense",
@@ -30,7 +32,7 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
   }
 
   return (
-    <form className="transaction-form" onSubmit={handleSubmit}>
+    <form className="card transaction-form" onSubmit={handleSubmit}>
       <div className="form-row">
         <label>
           Amount
@@ -85,9 +87,12 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
       </label>
 
       <div className="form-actions">
-        <button type="submit">{initialValues ? "Save Changes" : "Add Transaction"}</button>
+        <button type="submit">
+          {!initialValues && <IconPlus width={16} height={16} />}
+          {initialValues ? "Save Changes" : "Add Transaction"}
+        </button>
         {onCancel && (
-          <button type="button" onClick={onCancel}>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
             Cancel
           </button>
         )}

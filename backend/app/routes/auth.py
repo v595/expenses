@@ -56,6 +56,17 @@ def me():
     return jsonify({"user": auth_service.to_public_user(g.current_user)}), 200
 
 
+@auth_bp.route("/api/auth/me", methods=["PUT"])
+@login_required
+def update_me():
+    data = request.get_json(silent=True)
+    try:
+        user = auth_service.update_profile(g.current_user, data)
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Profile updated successfully", "user": user}), 200
+
+
 @auth_bp.route("/api/auth/logout", methods=["POST"])
 @login_required
 def logout():

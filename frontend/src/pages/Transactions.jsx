@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { IconSearch } from "../components/icons";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import { useAuth } from "../context/AuthContext";
@@ -73,7 +74,11 @@ function Transactions() {
 
   return (
     <div className="page">
-      <h1>Transactions</h1>
+      <div className="page-header">
+        <h1>Transactions</h1>
+        <p>Add, edit, and filter your income and expenses.</p>
+      </div>
+
       {error && <p className="error-message">{error}</p>}
 
       <TransactionForm
@@ -83,35 +88,53 @@ function Transactions() {
         onCancel={editingTransaction ? () => setEditingTransaction(null) : null}
       />
 
-      <div className="filter-bar">
-        <input
-          type="text"
-          name="search"
-          placeholder="Search description/category"
-          value={filters.search}
-          onChange={handleFilterChange}
-        />
-        <input
-          type="text"
-          name="category"
-          placeholder="Category"
-          value={filters.category}
-          onChange={handleFilterChange}
-        />
-        <select name="type" value={filters.type} onChange={handleFilterChange}>
-          <option value="">All types</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
-        <input type="date" name="start_date" value={filters.start_date} onChange={handleFilterChange} />
-        <input type="date" name="end_date" value={filters.end_date} onChange={handleFilterChange} />
-        <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}>
+      <div className="card filter-bar">
+        <div className="filter-field" style={{ flex: 1.4 }}>
+          <label>Search</label>
+          <div className="search-input-wrap">
+            <IconSearch width={16} height={16} />
+            <input
+              type="text"
+              name="search"
+              placeholder="Description or category"
+              value={filters.search}
+              onChange={handleFilterChange}
+            />
+          </div>
+        </div>
+        <div className="filter-field">
+          <label>Category</label>
+          <input
+            type="text"
+            name="category"
+            placeholder="e.g. Food"
+            value={filters.category}
+            onChange={handleFilterChange}
+          />
+        </div>
+        <div className="filter-field">
+          <label>Type</label>
+          <select name="type" value={filters.type} onChange={handleFilterChange}>
+            <option value="">All types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+        <div className="filter-field">
+          <label>From</label>
+          <input type="date" name="start_date" value={filters.start_date} onChange={handleFilterChange} />
+        </div>
+        <div className="filter-field">
+          <label>To</label>
+          <input type="date" name="end_date" value={filters.end_date} onChange={handleFilterChange} />
+        </div>
+        <button type="button" className="btn-secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
           Clear
         </button>
       </div>
 
       {loading ? (
-        <p>Loading...</p>
+        <p className="loading-state">Loading transactions...</p>
       ) : (
         <TransactionList
           transactions={transactions}

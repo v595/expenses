@@ -54,4 +54,13 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # column already exists
 
+    # Phase: profile pictures. Stored as a data: URI directly in the row
+    # (small images only, size-capped in the service layer) rather than on
+    # disk, since cloud hosts don't guarantee a persistent filesystem.
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN avatar TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
     conn.close()

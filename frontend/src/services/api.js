@@ -47,6 +47,10 @@ export function logoutUser(token) {
   return request("/auth/logout", { method: "POST", token });
 }
 
+export function updateProfile(data, token) {
+  return request("/auth/me", { method: "PUT", body: data, token });
+}
+
 // --- Transactions ---
 
 export function getTransactions(token, filters = {}) {
@@ -80,6 +84,6 @@ export function getDashboardSummary(token) {
   return request("/dashboard/summary", { token });
 }
 
-// Note: GET /api/dashboard/monthly exists on the backend (grouped by month,
-// for a future spending-over-time chart) but has no frontend caller yet.
-// Add getDashboardMonthly() here when that UI gets built.
+export function getDashboardMonthly(token) {
+  return request("/dashboard/monthly", { token });
+}

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-import { loginUser, logoutUser, registerUser } from "../services/api";
+import { loginUser, logoutUser, registerUser, updateProfile as apiUpdateProfile } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -40,7 +40,22 @@ export function AuthProvider({ children }) {
     setAuth({ token: null, user: null });
   }
 
-  const value = { token, user, isAuthenticated: Boolean(token), login, register, logout };
+  async function updateProfile(data) {
+    const result = await apiUpdateProfile(data, token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+    setAuth((prev) => ({ ...prev, user: result.user }));
+    return result;
+  }
+
+  const value = {
+    token,
+    user,
+    isAuthenticated: Boolean(token),
+    login,
+    register,
+    logout,
+    updateProfile,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

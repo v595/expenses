@@ -1,10 +1,13 @@
-// props: data passed IN from the parent (Dashboard). This component never
-// changes its own data — it just displays whatever it's given.
-function SummaryCard({ label, value, variant }) {
+function SummaryCard({ label, value, variant, icon: Icon }) {
   return (
-    <div className={`summary-card summary-card--${variant}`}>
-      <p className="summary-card-label">{label}</p>
-      <p className="summary-card-value">{value}</p>
+    <div className={`card summary-card summary-card--${variant}`}>
+      <div className="summary-card-icon">
+        <Icon width={20} height={20} />
+      </div>
+      <div>
+        <p className="summary-card-label">{label}</p>
+        <p className="summary-card-value">{value}</p>
+      </div>
     </div>
   );
 }
