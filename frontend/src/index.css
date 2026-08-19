@@ -81,9 +81,13 @@ h1, h2, h3 {
   gap: 0.75rem;
   padding: 0.9rem 1rem;
   background: var(--color-sidebar-bg);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
   z-index: 30;
+  box-sizing: border-box;
 }
 
 .mobile-menu-btn {
@@ -782,6 +786,7 @@ button.btn-icon.danger:hover {
 
   .main-content {
     margin-left: 0;
+    padding-top: 56px;
   }
 
   .page {
