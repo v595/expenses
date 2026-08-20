@@ -4,13 +4,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../hooks/useTheme";
+import ThemeSwitch from "./ThemeSwitch";
 import {
   IconBarChart,
   IconDashboard,
   IconLogout,
   IconMenu,
-  IconMoon,
-  IconSun,
   IconTarget,
   IconTransactions,
   IconUser,
@@ -48,14 +47,9 @@ function Navbar() {
         <div className="public-nav-links">
           <Link to="/login">Login</Link>
           <Link to="/register">Register</Link>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label="Toggle dark mode"
-          >
-            {theme === "dark" ? <IconSun width={16} height={16} /> : <IconMoon width={16} height={16} />}
-          </button>
+          <span style={{ marginLeft: "1.25rem", display: "inline-flex" }}>
+            <ThemeSwitch theme={theme} onToggle={toggleTheme} />
+          </span>
         </div>
       </nav>
     );
@@ -123,10 +117,10 @@ function Navbar() {
             <Avatar user={user} size={30} />
             <span>{user.name}</span>
           </Link>
-          <button className="sidebar-logout" onClick={toggleTheme}>
-            {theme === "dark" ? <IconSun width={18} height={18} /> : <IconMoon width={18} height={18} />}
-            {theme === "dark" ? "Light mode" : "Dark mode"}
-          </button>
+          <div className="sidebar-theme-row">
+            <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+            <ThemeSwitch theme={theme} onToggle={toggleTheme} />
+          </div>
           <button className="sidebar-logout" onClick={handleLogout}>
             <IconLogout width={18} height={18} />
             Logout
