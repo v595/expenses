@@ -115,6 +115,21 @@ def get_category_spending(user_id):
     return [dict(row) for row in rows]
 
 
+def get_category_spending_for_month(user_id, year_month):
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT category, SUM(amount) AS total
+        FROM transactions
+        WHERE user_id = ? AND type = 'expense' AND strftime('%Y-%m', date) = ?
+        GROUP BY category
+        """,
+        (user_id, year_month),
+    ).fetchall()
+    conn.close()
+    return {row["category"]: row["total"] for row in rows}
+
+
 def get_monthly_totals(user_id):
     conn = get_db_connection()
     rows = conn.execute(

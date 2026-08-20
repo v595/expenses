@@ -3,11 +3,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import Avatar from "./Avatar";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../hooks/useTheme";
 import {
   IconBarChart,
   IconDashboard,
   IconLogout,
   IconMenu,
+  IconMoon,
+  IconSun,
+  IconTarget,
   IconTransactions,
   IconUser,
   IconWallet,
@@ -27,6 +31,7 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   async function handleLogout() {
     await logout();
@@ -43,6 +48,14 @@ function Navbar() {
         <div className="public-nav-links">
           <Link to="/login">Login</Link>
           <Link to="/register">Register</Link>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+          >
+            {theme === "dark" ? <IconSun width={16} height={16} /> : <IconMoon width={16} height={16} />}
+          </button>
         </div>
       </nav>
     );
@@ -52,6 +65,7 @@ function Navbar() {
     { to: "/", label: "Dashboard", icon: IconDashboard },
     { to: "/transactions", label: "Transactions", icon: IconTransactions },
     { to: "/reports", label: "Reports", icon: IconBarChart },
+    { to: "/budgets", label: "Budgets", icon: IconTarget },
     { to: "/profile", label: "Profile", icon: IconUser },
   ];
 
@@ -109,6 +123,10 @@ function Navbar() {
             <Avatar user={user} size={30} />
             <span>{user.name}</span>
           </Link>
+          <button className="sidebar-logout" onClick={toggleTheme}>
+            {theme === "dark" ? <IconSun width={18} height={18} /> : <IconMoon width={18} height={18} />}
+            {theme === "dark" ? "Light mode" : "Dark mode"}
+          </button>
           <button className="sidebar-logout" onClick={handleLogout}>
             <IconLogout width={18} height={18} />
             Logout

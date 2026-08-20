@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { IconSearch } from "../components/icons";
+import { IconDownload, IconSearch } from "../components/icons";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import { useAuth } from "../context/AuthContext";
@@ -10,6 +10,7 @@ import {
   getTransactions,
   updateTransaction,
 } from "../services/api";
+import { downloadTransactionsCsv } from "../utils/downloadCsv";
 
 const EMPTY_FILTERS = { search: "", category: "", type: "", start_date: "", end_date: "" };
 
@@ -130,6 +131,15 @@ function Transactions() {
         </div>
         <button type="button" className="btn-secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
           Clear
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => downloadTransactionsCsv(transactions)}
+          disabled={transactions.length === 0}
+        >
+          <IconDownload width={16} height={16} />
+          Export CSV
         </button>
       </div>
 

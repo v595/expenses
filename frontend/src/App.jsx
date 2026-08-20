@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import Budgets from "./pages/Budgets";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -39,6 +40,14 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Reports />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/budgets"
+        element={
+          <RequireAuth>
+            <Budgets />
           </RequireAuth>
         }
       />

@@ -87,3 +87,17 @@ export function getDashboardSummary(token) {
 export function getDashboardMonthly(token) {
   return request("/dashboard/monthly", { token });
 }
+
+// --- Budgets ---
+
+export function getBudgets(token) {
+  return request("/budgets", { token });
+}
+
+export function setBudget(category, monthlyLimit, token) {
+  return request("/budgets", { method: "POST", body: { category, monthly_limit: monthlyLimit }, token });
+}
+
+export function deleteBudget(category, token) {
+  return request(`/budgets/${encodeURIComponent(category)}`, { method: "DELETE", token });
+}
