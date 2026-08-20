@@ -54,6 +54,18 @@ def init_db():
             UNIQUE (user_id, category),
             FOREIGN KEY (user_id) REFERENCES users (id)
         );
+
+        CREATE TABLE IF NOT EXISTS recurring_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+            category TEXT NOT NULL,
+            description TEXT,
+            frequency TEXT NOT NULL CHECK (frequency IN ('weekly', 'monthly', 'yearly')),
+            next_date TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
         """
     )
     conn.commit()

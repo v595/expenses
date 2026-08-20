@@ -101,3 +101,17 @@ export function setBudget(category, monthlyLimit, token) {
 export function deleteBudget(category, token) {
   return request(`/budgets/${encodeURIComponent(category)}`, { method: "DELETE", token });
 }
+
+// --- Recurring transactions ---
+
+export function getRecurring(token) {
+  return request("/recurring", { token });
+}
+
+export function createRecurring(data, token) {
+  return request("/recurring", { method: "POST", body: data, token });
+}
+
+export function deleteRecurring(id, token) {
+  return request(`/recurring/${id}`, { method: "DELETE", token });
+}

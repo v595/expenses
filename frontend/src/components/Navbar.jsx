@@ -10,6 +10,7 @@ import {
   IconDashboard,
   IconLogout,
   IconMenu,
+  IconRepeat,
   IconTarget,
   IconTransactions,
   IconUser,
@@ -60,6 +61,7 @@ function Navbar() {
     { to: "/transactions", label: "Transactions", icon: IconTransactions },
     { to: "/reports", label: "Reports", icon: IconBarChart },
     { to: "/budgets", label: "Budgets", icon: IconTarget },
+    { to: "/recurring", label: "Recurring", icon: IconRepeat },
     { to: "/profile", label: "Profile", icon: IconUser },
   ];
 

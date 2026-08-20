@@ -1,7 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 
 from app.routes.auth import login_required
-from app.services import transaction_service
+from app.services import recurring_service, transaction_service
 
 transactions_bp = Blueprint("transactions", __name__)
 
@@ -9,6 +9,7 @@ transactions_bp = Blueprint("transactions", __name__)
 @transactions_bp.route("/api/transactions", methods=["GET"])
 @login_required
 def list_transactions():
+    recurring_service.materialize_due(g.current_user["id"])
     try:
         transactions = transaction_service.get_transactions(
             g.current_user["id"],

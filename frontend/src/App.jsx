@@ -6,6 +6,7 @@ import Budgets from "./pages/Budgets";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import Recurring from "./pages/Recurring";
 import Register from "./pages/Register";
 import Reports from "./pages/Reports";
 import Transactions from "./pages/Transactions";
@@ -48,6 +49,14 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Budgets />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/recurring"
+        element={
+          <RequireAuth>
+            <Recurring />
           </RequireAuth>
         }
       />
