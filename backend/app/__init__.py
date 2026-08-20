@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from app.config import Config
 from app.database import init_db
+from app.routes.admin import admin_bp
 from app.routes.auth import auth_bp
 from app.routes.dashboard import dashboard_bp
 from app.routes.health import health_bp
@@ -23,6 +24,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(admin_bp)
 
     # Fallbacks so even unexpected errors come back as JSON, matching every
     # other response this API sends, instead of Flask's default HTML pages.
