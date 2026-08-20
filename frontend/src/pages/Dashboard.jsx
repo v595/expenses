@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import SummaryCard from "../components/SummaryCard";
-import { IconReceipt, IconTrendingDown, IconTrendingUp, IconWallet } from "../components/icons";
+import { IconDownload, IconReceipt, IconTrendingDown, IconTrendingUp, IconWallet } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardSummary, getTransactions } from "../services/api";
 import { categoryColor } from "../utils/categoryColor";
+import { downloadReportPdf, getRangeForPeriod } from "../utils/downloadReportPdf";
 
 function formatMoney(amount) {
   return `₹${amount.toFixed(2)}`;
@@ -16,6 +17,8 @@ function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [error, setError] = useState(null);
+  const [reportPeriod, setReportPeriod] = useState("month");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     Promise.all([getDashboardSummary(token), getTransactions(token)])
@@ -31,11 +34,37 @@ function Dashboard() {
 
   const maxCategoryTotal = summary.category_spending[0]?.total || 1;
 
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const range = getRangeForPeriod(reportPeriod);
+      const transactions = await getTransactions(token, range);
+      downloadReportPdf({ period: reportPeriod, userName: user.name, transactions });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="page">
-      <div className="page-header">
-        <h1>Welcome back, {user.name.split(" ")[0]}</h1>
-        <p>Here's what's happening with your money.</p>
+      <div className="page-header dashboard-header">
+        <div>
+          <h1>Welcome back, {user.name.split(" ")[0]}</h1>
+          <p>Here's what's happening with your money.</p>
+        </div>
+        <div className="report-download">
+          <select value={reportPeriod} onChange={(e) => setReportPeriod(e.target.value)}>
+            <option value="week">Weekly</option>
+            <option value="month">Monthly</option>
+            <option value="year">Yearly</option>
+          </select>
+          <button type="button" onClick={handleDownload} disabled={downloading}>
+            <IconDownload width={16} height={16} />
+            {downloading ? "Preparing..." : "Download PDF"}
+          </button>
+        </div>
       </div>
 
       <div className="summary-grid">

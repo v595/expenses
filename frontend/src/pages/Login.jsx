@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import PasswordField from "../components/PasswordField";
 import { useAuth } from "../context/AuthContext";
 
 function Login() {
@@ -38,16 +39,13 @@ function Login() {
             Email
             <input type="email" name="email" value={form.email} onChange={handleChange} required />
           </label>
-          <label>
-            Password
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
-          </label>
+          <PasswordField
+            label="Password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
           <button type="submit">Login</button>
         </form>
         <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "1rem" }}>
