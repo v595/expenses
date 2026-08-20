@@ -10,13 +10,11 @@ def count_users():
 
 def create_user(name, email, password_hash):
     conn = get_db_connection()
-    cursor = conn.execute(
-        "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+    row = conn.execute(
+        "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?) RETURNING *",
         (name, email, password_hash),
-    )
+    ).fetchone()
     conn.commit()
-    new_id = cursor.lastrowid
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (new_id,)).fetchone()
     conn.close()
     return dict(row)
 

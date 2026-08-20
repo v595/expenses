@@ -23,16 +23,15 @@ def get_due_recurring(user_id, today):
 
 def create_recurring(user_id, amount, type_, category, description, frequency, next_date):
     conn = get_db_connection()
-    cursor = conn.execute(
+    row = conn.execute(
         """
         INSERT INTO recurring_transactions (user_id, amount, type, category, description, frequency, next_date)
         VALUES (?, ?, ?, ?, ?, ?, ?)
+        RETURNING *
         """,
         (user_id, amount, type_, category, description, frequency, next_date),
-    )
+    ).fetchone()
     conn.commit()
-    new_id = cursor.lastrowid
-    row = conn.execute("SELECT * FROM recurring_transactions WHERE id = ?", (new_id,)).fetchone()
     conn.close()
     return dict(row)
 

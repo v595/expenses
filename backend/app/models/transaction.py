@@ -3,16 +3,15 @@ from app.database import get_db_connection
 
 def create_transaction(user_id, amount, type_, category, description, date):
     conn = get_db_connection()
-    cursor = conn.execute(
+    row = conn.execute(
         """
         INSERT INTO transactions (user_id, amount, type, category, description, date)
         VALUES (?, ?, ?, ?, ?, ?)
+        RETURNING *
         """,
         (user_id, amount, type_, category, description, date),
-    )
+    ).fetchone()
     conn.commit()
-    new_id = cursor.lastrowid
-    row = conn.execute("SELECT * FROM transactions WHERE id = ?", (new_id,)).fetchone()
     conn.close()
     return dict(row)
 
@@ -121,7 +120,7 @@ def get_category_spending_for_month(user_id, year_month):
         """
         SELECT category, SUM(amount) AS total
         FROM transactions
-        WHERE user_id = ? AND type = 'expense' AND strftime('%Y-%m', date) = ?
+        WHERE user_id = ? AND type = 'expense' AND SUBSTR(date, 1, 7) = ?
         GROUP BY category
         """,
         (user_id, year_month),
@@ -135,7 +134,7 @@ def get_monthly_totals(user_id):
     rows = conn.execute(
         """
         SELECT
-            strftime('%Y-%m', date) AS month,
+            SUBSTR(date, 1, 7) AS month,
             COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS income,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS expenses
         FROM transactions
