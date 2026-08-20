@@ -104,14 +104,14 @@ function Reports() {
         <div className="card card-padded">
           <h2 className="card-title">Monthly Income vs Expenses</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={6} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} padding={{ left: 20, right: 20 }} />
+              <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={48} />
               <Tooltip content={<CurrencyTooltip />} cursor={{ fill: "var(--color-bg)" }} />
               <Legend wrapperStyle={{ fontSize: "0.82rem" }} />
-              <Bar dataKey="Income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="var(--color-expense)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" fill="var(--color-income)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              <Bar dataKey="Expenses" fill="var(--color-expense)" radius={[4, 4, 0, 0]} maxBarSize={48} />
             </BarChart>
           </ResponsiveContainer>
         </div>

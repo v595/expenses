@@ -39,7 +39,7 @@ function Dashboard() {
     try {
       const range = getRangeForPeriod(reportPeriod);
       const transactions = await getTransactions(token, range);
-      downloadReportPdf({ period: reportPeriod, userName: user.name, transactions });
+      downloadReportPdf({ period: reportPeriod, userName: user.name, transactions, range });
     } catch (err) {
       setError(err.message);
     } finally {
