@@ -115,3 +115,125 @@ export function createRecurring(data, token) {
 export function deleteRecurring(id, token) {
   return request(`/recurring/${id}`, { method: "DELETE", token });
 }
+
+// --- Transaction import ---
+
+export function importTransactions(rows, token) {
+  return request("/transactions/import", { method: "POST", body: { rows }, token });
+}
+
+// --- Settings ---
+
+export function updateSettings(data, token) {
+  return request("/settings", { method: "PUT", body: data, token });
+}
+
+export function deleteAccountPermanently(token) {
+  return request("/settings/account", { method: "DELETE", token });
+}
+
+// --- Notifications ---
+
+export function getNotifications(token) {
+  return request("/notifications", { token });
+}
+
+export function getUnreadNotificationCount(token) {
+  return request("/notifications/unread-count", { token });
+}
+
+export function markNotificationRead(id, token) {
+  return request(`/notifications/${id}/read`, { method: "POST", token });
+}
+
+export function markAllNotificationsRead(token) {
+  return request("/notifications/read-all", { method: "POST", token });
+}
+
+export function deleteNotification(id, token) {
+  return request(`/notifications/${id}`, { method: "DELETE", token });
+}
+
+// --- Categories ---
+
+export function getCategories(token) {
+  return request("/categories", { token });
+}
+
+export function createCategory(data, token) {
+  return request("/categories", { method: "POST", body: data, token });
+}
+
+export function deleteCategory(id, token) {
+  return request(`/categories/${id}`, { method: "DELETE", token });
+}
+
+// --- Accounts / wallets ---
+
+export function getAccounts(token) {
+  return request("/accounts", { token });
+}
+
+export function createAccount(data, token) {
+  return request("/accounts", { method: "POST", body: data, token });
+}
+
+export function updateAccount(id, data, token) {
+  return request(`/accounts/${id}`, { method: "PUT", body: data, token });
+}
+
+export function deleteAccount(id, token) {
+  return request(`/accounts/${id}`, { method: "DELETE", token });
+}
+
+// --- Goals ---
+
+export function getGoals(token) {
+  return request("/goals", { token });
+}
+
+export function createGoal(data, token) {
+  return request("/goals", { method: "POST", body: data, token });
+}
+
+export function addGoalFunds(id, amount, token) {
+  return request(`/goals/${id}/add-funds`, { method: "POST", body: { amount }, token });
+}
+
+export function deleteGoal(id, token) {
+  return request(`/goals/${id}`, { method: "DELETE", token });
+}
+
+// --- Bills ---
+
+export function getBills(token) {
+  return request("/bills", { token });
+}
+
+export function createBill(data, token) {
+  return request("/bills", { method: "POST", body: data, token });
+}
+
+export function payBill(id, token) {
+  return request(`/bills/${id}/pay`, { method: "POST", token });
+}
+
+export function deleteBill(id, token) {
+  return request(`/bills/${id}`, { method: "DELETE", token });
+}
+
+// --- Tags ---
+
+export function getTags(token) {
+  return request("/tags", { token });
+}
+
+export function deleteTag(id, token) {
+  return request(`/tags/${id}`, { method: "DELETE", token });
+}
+
+// --- Insights ---
+
+export function getDashboardInsights(token) {
+  return request("/dashboard/insights", { token });
+}

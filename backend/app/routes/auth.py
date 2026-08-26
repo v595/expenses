@@ -30,6 +30,21 @@ def login_required(f):
     return wrapper
 
 
+def admin_required(f):
+    """Same as login_required, but also requires the user's is_admin flag.
+    Returns 404 (not 403) for non-admins, so the admin API surface doesn't
+    even reveal its own existence to a regular user."""
+
+    @wraps(f)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not g.current_user.get("is_admin"):
+            return jsonify({"error": "Not found"}), 404
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
 @auth_bp.route("/api/auth/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True)

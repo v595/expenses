@@ -1,41 +1,36 @@
-import os
+from flask import Blueprint, g, jsonify
 
-from flask import Blueprint, jsonify, request
-
-from app.database import get_db_connection
+from app.routes.auth import admin_required
+from app.services import admin_service
 
 admin_bp = Blueprint("admin", __name__)
 
 
+@admin_bp.route("/api/admin/stats", methods=["GET"])
+@admin_required
+def stats():
+    return jsonify(admin_service.get_stats()), 200
+
+
 @admin_bp.route("/api/admin/users", methods=["GET"])
-def list_users_with_transactions():
-    # ponytail: shared-secret header, not a real admin auth system.
-    # Swap for a proper is_admin flag + login_required if this grows past one debug route.
-    secret = os.environ.get("ADMIN_SECRET")
-    if not secret or request.headers.get("X-Admin-Secret") != secret:
-        return jsonify({"error": "Not found"}), 404
+@admin_required
+def list_users():
+    return jsonify(admin_service.list_users()), 200
 
-    conn = get_db_connection()
-    users = conn.execute(
-        "SELECT id, name, email, created_at FROM users ORDER BY name"
-    ).fetchall()
 
-    result = []
-    for user in users:
-        transactions = conn.execute(
-            "SELECT id, date, type, category, amount, description FROM transactions "
-            "WHERE user_id = ? ORDER BY date DESC",
-            (user["id"],),
-        ).fetchall()
-        result.append(
-            {
-                "id": user["id"],
-                "name": user["name"],
-                "email": user["email"],
-                "created_at": user["created_at"],
-                "transactions": [dict(t) for t in transactions],
-            }
-        )
+@admin_bp.route("/api/admin/users/<int:user_id>/transactions", methods=["GET"])
+@admin_required
+def user_transactions(user_id):
+    if admin_service.get_user(user_id) is None:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(admin_service.get_user_transactions(user_id)), 200
 
-    conn.close()
-    return jsonify(result)
+
+@admin_bp.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
+@admin_required
+def delete_user(user_id):
+    try:
+        admin_service.delete_user(user_id, g.current_user["id"])
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "User deleted"}), 200

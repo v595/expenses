@@ -1,26 +1,29 @@
 from app.database import get_db_connection
 
 
-def create_transaction(user_id, amount, type_, category, description, date):
+def create_transaction(user_id, amount, type_, category, description, date, account_id=None, receipt=None):
     conn = get_db_connection()
     row = conn.execute(
         """
-        INSERT INTO transactions (user_id, amount, type, category, description, date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (user_id, amount, type, category, description, date, account_id, receipt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
         """,
-        (user_id, amount, type_, category, description, date),
+        (user_id, amount, type_, category, description, date, account_id, receipt),
     ).fetchone()
     conn.commit()
     conn.close()
     return dict(row)
 
 
-def get_transactions_by_user(user_id, category=None, type_=None, start_date=None, end_date=None, search=None):
+def get_transactions_by_user(
+    user_id, category=None, type_=None, start_date=None, end_date=None, search=None, tag_id=None
+):
     # Built dynamically because filters are optional, but every value still goes
     # through a `?` placeholder — never string-interpolated into the SQL itself.
-    conditions = ["user_id = ?"]
+    conditions = ["transactions.user_id = ?"]
     params = [user_id]
+    joins = ""
 
     if category:
         conditions.append("category = ?")
@@ -38,8 +41,15 @@ def get_transactions_by_user(user_id, category=None, type_=None, start_date=None
         conditions.append("(category LIKE ? OR description LIKE ?)")
         like = f"%{search}%"
         params.extend([like, like])
+    if tag_id:
+        joins = "JOIN transaction_tags ON transaction_tags.transaction_id = transactions.id"
+        conditions.append("transaction_tags.tag_id = ?")
+        params.append(tag_id)
 
-    query = f"SELECT * FROM transactions WHERE {' AND '.join(conditions)} ORDER BY date DESC, id DESC"
+    query = (
+        f"SELECT transactions.* FROM transactions {joins} "
+        f"WHERE {' AND '.join(conditions)} ORDER BY date DESC, transactions.id DESC"
+    )
 
     conn = get_db_connection()
     rows = conn.execute(query, params).fetchall()
@@ -56,15 +66,15 @@ def get_transaction_by_id(transaction_id):
     return dict(row) if row else None
 
 
-def update_transaction(transaction_id, amount, type_, category, description, date):
+def update_transaction(transaction_id, amount, type_, category, description, date, account_id=None, receipt=None):
     conn = get_db_connection()
     conn.execute(
         """
         UPDATE transactions
-        SET amount = ?, type = ?, category = ?, description = ?, date = ?
+        SET amount = ?, type = ?, category = ?, description = ?, date = ?, account_id = ?, receipt = ?
         WHERE id = ?
         """,
-        (amount, type_, category, description, date, transaction_id),
+        (amount, type_, category, description, date, account_id, receipt, transaction_id),
     )
     conn.commit()
     row = conn.execute(
@@ -76,6 +86,7 @@ def update_transaction(transaction_id, amount, type_, category, description, dat
 
 def delete_transaction(transaction_id):
     conn = get_db_connection()
+    conn.execute("DELETE FROM transaction_tags WHERE transaction_id = ?", (transaction_id,))
     conn.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
     conn.commit()
     conn.close()

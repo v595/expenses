@@ -1,5 +1,6 @@
 import re
 import secrets
+from datetime import datetime, timezone
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -27,6 +28,14 @@ def to_public_user(user):
         "email": user["email"],
         "created_at": user["created_at"],
         "avatar": user["avatar"] if "avatar" in user.keys() else None,
+        "is_admin": bool(user["is_admin"]) if "is_admin" in user.keys() else False,
+        "currency": user["currency"] if "currency" in user.keys() and user["currency"] else "USD",
+        "notify_budget_alerts": bool(user["notify_budget_alerts"])
+        if "notify_budget_alerts" in user.keys()
+        else True,
+        "notify_bill_reminders": bool(user["notify_bill_reminders"])
+        if "notify_bill_reminders" in user.keys()
+        else True,
     }
 
 
@@ -49,6 +58,10 @@ def _validate_register_data(data):
     return {"name": name.strip(), "email": email.strip().lower(), "password": password}
 
 
+def _now_iso():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
 def register(data):
     clean = _validate_register_data(data)
 
@@ -60,6 +73,7 @@ def register(data):
 
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
+    user_model.record_login(user["id"], _now_iso())
 
     return to_public_user(user), token
 
@@ -79,6 +93,7 @@ def login(data):
 
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
+    user_model.record_login(user["id"], _now_iso())
 
     return to_public_user(user), token
 

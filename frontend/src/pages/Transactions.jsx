@@ -1,26 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { IconDownload, IconSearch } from "../components/icons";
+import { IconDownload, IconSearch, IconUpload } from "../components/icons";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import { useAuth } from "../context/AuthContext";
 import {
   createTransaction,
   deleteTransaction,
+  getTags,
   getTransactions,
+  importTransactions,
   updateTransaction,
 } from "../services/api";
 import { downloadTransactionsCsv } from "../utils/downloadCsv";
+import { parseTransactionsCsv } from "../utils/parseTransactionsCsv";
 
-const EMPTY_FILTERS = { search: "", category: "", type: "", start_date: "", end_date: "" };
+const EMPTY_FILTERS = { search: "", category: "", type: "", start_date: "", end_date: "", tag_id: "" };
 
 function Transactions() {
   const { token } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [tags, setTags] = useState([]);
   const [editingTransaction, setEditingTransaction] = useState(null); // null = "add" mode
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState(null);
+  const fileInputRef = useRef(null);
 
   function refresh() {
     setLoading(true);
@@ -36,6 +43,10 @@ function Transactions() {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, filters]);
+
+  useEffect(() => {
+    getTags(token).then(setTags).catch(() => {});
+  }, [token]);
 
   function handleFilterChange(event) {
     const { name, value } = event.target;
@@ -73,6 +84,27 @@ function Transactions() {
     }
   }
 
+  async function handleImportFile(event) {
+    const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    setImportSummary(null);
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const rows = parseTransactionsCsv(text);
+      const result = await importTransactions(rows, token);
+      setImportSummary(result);
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -81,6 +113,15 @@ function Transactions() {
       </div>
 
       {error && <p className="error-message">{error}</p>}
+      {importSummary && (
+        <p className={importSummary.errors.length > 0 ? "error-message" : "success-message"}>
+          Imported {importSummary.imported} transaction{importSummary.imported === 1 ? "" : "s"}.
+          {importSummary.errors.length > 0 &&
+            ` ${importSummary.errors.length} row(s) skipped: ${importSummary.errors
+              .map((e) => `row ${e.row} (${e.error})`)
+              .join(", ")}`}
+        </p>
+      )}
 
       <TransactionForm
         key={editingTransaction ? editingTransaction.id : "new"}
@@ -129,8 +170,37 @@ function Transactions() {
           <label>To</label>
           <input type="date" name="end_date" value={filters.end_date} onChange={handleFilterChange} />
         </div>
+        {tags.length > 0 && (
+          <div className="filter-field">
+            <label>Tag</label>
+            <select name="tag_id" value={filters.tag_id} onChange={handleFilterChange}>
+              <option value="">All tags</option>
+              {tags.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button type="button" className="btn-secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
           Clear
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleImportFile}
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => fileInputRef.current.click()}
+          disabled={importing}
+        >
+          <IconUpload width={16} height={16} />
+          {importing ? "Importing..." : "Import CSV"}
         </button>
         <button
           type="button"

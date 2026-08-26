@@ -4,17 +4,23 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../hooks/useTheme";
+import NotificationBell from "./NotificationBell";
 import ThemeSwitch from "./ThemeSwitch";
 import {
   IconBarChart,
   IconDashboard,
+  IconFlag,
   IconLogout,
   IconMenu,
+  IconReceipt,
   IconRepeat,
+  IconSettings,
+  IconTag,
   IconTarget,
   IconTransactions,
   IconUser,
   IconWallet,
+  IconWalletStack,
   IconX,
 } from "./icons";
 
@@ -62,7 +68,12 @@ function Navbar() {
     { to: "/reports", label: "Reports", icon: IconBarChart },
     { to: "/budgets", label: "Budgets", icon: IconTarget },
     { to: "/recurring", label: "Recurring", icon: IconRepeat },
+    { to: "/accounts", label: "Accounts", icon: IconWalletStack },
+    { to: "/goals", label: "Goals", icon: IconFlag },
+    { to: "/bills", label: "Bills", icon: IconReceipt },
+    { to: "/categories", label: "Categories", icon: IconTag },
     { to: "/profile", label: "Profile", icon: IconUser },
+    { to: "/settings", label: "Settings", icon: IconSettings },
   ];
 
   return (
@@ -80,6 +91,9 @@ function Navbar() {
           <BrandMark />
           <span>Expense Tracker</span>
         </Link>
+        <span style={{ marginLeft: "auto" }}>
+          <NotificationBell />
+        </span>
       </div>
 
       {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
@@ -90,6 +104,9 @@ function Navbar() {
             <BrandMark />
             <span>Expense Tracker</span>
           </Link>
+          <span className="sidebar-bell">
+            <NotificationBell />
+          </span>
           <button
             type="button"
             className="sidebar-close-btn"

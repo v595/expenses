@@ -1005,3 +1005,363 @@ button.btn-icon.danger:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Settings --- */
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-toggle-row:last-of-type {
+  border-bottom: none;
+}
+
+.settings-toggle-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.settings-toggle-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.settings-toggle-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+.danger-zone {
+  border-color: var(--color-expense-soft);
+}
+
+button.btn-danger {
+  background: var(--gradient-expense);
+}
+
+button.btn-danger:hover {
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+}
+
+/* --- Category color swatches --- */
+
+.swatch-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: row !important;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+  box-shadow: none;
+}
+
+.swatch[data-active="true"] {
+  border-color: var(--color-text);
+}
+
+.category-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  box-shadow: none;
+}
+
+.chip-remove:hover {
+  background: var(--color-expense-soft);
+  color: var(--color-expense);
+  transform: none;
+  box-shadow: none;
+}
+
+/* --- Account / goal cards --- */
+
+.account-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.account-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.account-card-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.account-card-balance {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 0.3rem;
+  color: var(--color-income);
+}
+
+.account-card-balance.expense {
+  color: var(--color-expense);
+}
+
+/* --- Dashboard insights --- */
+
+.insights-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.insights-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.insights-icon-up {
+  color: var(--color-expense);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.insights-icon-down {
+  color: var(--color-income);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* --- Notification bell --- */
+
+.notification-bell-wrap {
+  position: relative;
+}
+
+.notification-bell-btn {
+  position: relative;
+}
+
+.mobile-topbar .notification-bell-btn {
+  color: white;
+}
+
+.sidebar-bell .notification-bell-btn {
+  color: var(--color-sidebar-text);
+}
+
+.sidebar-bell .notification-bell-btn:hover {
+  color: var(--color-sidebar-text-active);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--color-expense);
+  color: white;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-width: 90vw;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-hover);
+  z-index: 50;
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+.notification-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.notification-dropdown-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.notification-dropdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notification-dropdown-list li {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.notification-dropdown-list li.unread {
+  background: var(--color-primary-soft);
+}
+
+.notification-dropdown-viewall {
+  width: 100%;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.notification-dropdown-viewall:hover {
+  background: var(--color-bg);
+  box-shadow: none;
+  transform: none;
+}
+
+.notification-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  background: var(--color-primary);
+}
+
+.notification-dot.budget_exceeded {
+  background: var(--color-expense);
+}
+
+.notification-dot.bill_due {
+  background: #d97706;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.notification-message {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+.notification-time {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+.notification-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.notification-row:last-child {
+  border-bottom: none;
+}
+
+.notification-row.unread {
+  background: var(--color-primary-soft);
+}
+
+.notification-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Transaction tags & receipts --- */
+
+.row-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.row-tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.receipt-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}

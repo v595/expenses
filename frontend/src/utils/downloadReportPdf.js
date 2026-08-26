@@ -1,6 +1,8 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+import { currencySymbol } from "./currency";
+
 const BRAND = [79, 70, 229]; // matches --color-primary
 const BRAND_END = [124, 58, 237]; // violet — gradient endpoint for header/accents
 const INCOME = [22, 163, 74];
@@ -25,8 +27,8 @@ function drawGradientRect(doc, x, y, w, h, colorStart, colorEnd) {
   }
 }
 
-function formatMoney(amount) {
-  return `Rs. ${Number(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatMoney(amount, currency) {
+  return `${currencySymbol(currency)}${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // "week" = last 7 days, "month" = current calendar month, "year" = current calendar year.
@@ -63,7 +65,7 @@ function statBlock(doc, x, y, width, label, value, colorStart, colorEnd) {
   doc.setFont(undefined, "normal");
 }
 
-export function downloadReportPdf({ period, userName, transactions, range }) {
+export function downloadReportPdf({ period, userName, transactions, range, currency = "USD" }) {
   const income = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const balance = income - expenses;
@@ -96,14 +98,14 @@ export function downloadReportPdf({ period, userName, transactions, range }) {
   const cardY = 42;
   const gap = 6;
   const cardWidth = (pageWidth - 28 - gap * 2) / 3;
-  statBlock(doc, 14, cardY, cardWidth, "Total Income", formatMoney(income), INCOME, INCOME_END);
+  statBlock(doc, 14, cardY, cardWidth, "Total Income", formatMoney(income, currency), INCOME, INCOME_END);
   statBlock(
     doc,
     14 + cardWidth + gap,
     cardY,
     cardWidth,
     "Total Expenses",
-    formatMoney(expenses),
+    formatMoney(expenses, currency),
     EXPENSE,
     EXPENSE_END
   );
@@ -113,7 +115,7 @@ export function downloadReportPdf({ period, userName, transactions, range }) {
     cardY,
     cardWidth,
     "Net Balance",
-    formatMoney(balance),
+    formatMoney(balance, currency),
     ...(balance >= 0 ? [INCOME, INCOME_END] : [EXPENSE, EXPENSE_END])
   );
 
@@ -133,7 +135,7 @@ export function downloadReportPdf({ period, userName, transactions, range }) {
       head: [["Category", "Amount", "% of Expenses"]],
       body: topCategories.map(([category, total]) => [
         category,
-        formatMoney(total),
+        formatMoney(total, currency),
         expenses > 0 ? `${((total / expenses) * 100).toFixed(1)}%` : "0%",
       ]),
       styles: { fontSize: 9, cellPadding: 3 },
@@ -164,7 +166,7 @@ export function downloadReportPdf({ period, userName, transactions, range }) {
         t.type === "income" ? "Income" : "Expense",
         t.category,
         t.description || "-",
-        formatMoney(t.amount),
+        formatMoney(t.amount, currency),
       ]),
     styles: { fontSize: 8.5, cellPadding: 3 },
     headStyles: { fillColor: BRAND, textColor: 255 },

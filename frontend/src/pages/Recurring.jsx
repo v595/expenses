@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { IconPlus, IconTrash } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { createRecurring, deleteRecurring, getRecurring } from "../services/api";
+import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const EMPTY_FORM = {
   amount: "",
@@ -13,12 +14,9 @@ const EMPTY_FORM = {
   start_date: new Date().toISOString().slice(0, 10),
 };
 
-function formatMoney(amount) {
-  return `₹${amount.toFixed(2)}`;
-}
-
 function Recurring() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const formatMoney = (amount) => formatMoneyIn(amount, user.currency);
   const [rules, setRules] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);

@@ -1,6 +1,12 @@
 import { createContext, useContext, useState } from "react";
 
-import { loginUser, logoutUser, registerUser, updateProfile as apiUpdateProfile } from "../services/api";
+import {
+  loginUser,
+  logoutUser,
+  registerUser,
+  updateProfile as apiUpdateProfile,
+  updateSettings as apiUpdateSettings,
+} from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -47,6 +53,13 @@ export function AuthProvider({ children }) {
     return result;
   }
 
+  async function updateSettings(data) {
+    const result = await apiUpdateSettings(data, token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+    setAuth((prev) => ({ ...prev, user: result.user }));
+    return result;
+  }
+
   const value = {
     token,
     user,
@@ -55,6 +68,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateProfile,
+    updateSettings,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

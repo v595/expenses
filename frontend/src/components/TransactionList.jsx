@@ -1,7 +1,15 @@
 import { IconEdit, IconReceipt, IconTrash } from "./icons";
+import { useAuth } from "../context/AuthContext";
 import { categoryColor } from "../utils/categoryColor";
+import { currencySymbol } from "../utils/currency";
 
 function TransactionList({ transactions, onEdit, onDelete }) {
+  const { user } = useAuth();
+
+  function openReceipt(receipt) {
+    window.open(receipt, "_blank", "noopener,noreferrer");
+  }
+
   if (transactions.length === 0) {
     return (
       <div className="card transaction-list-card empty-state">
@@ -37,13 +45,34 @@ function TransactionList({ transactions, onEdit, onDelete }) {
                     {transaction.category}
                   </span>
                 </td>
-                <td>{transaction.description || "—"}</td>
+                <td>
+                  {transaction.description || "—"}
+                  {transaction.tags?.length > 0 && (
+                    <div className="row-tag-list">
+                      {transaction.tags.map((t) => (
+                        <span key={t.id} className="row-tag">
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
                 <td className={`amount-cell ${transaction.type}`}>
                   {transaction.type === "expense" ? "-" : "+"}
-                  {transaction.amount}
+                  {currencySymbol(user.currency)}
+                  {transaction.amount.toFixed(2)}
                 </td>
                 <td>
                   <div className="row-actions">
+                    {transaction.receipt && (
+                      <button
+                        className="btn-icon"
+                        title="View receipt"
+                        onClick={() => openReceipt(transaction.receipt)}
+                      >
+                        <IconReceipt width={16} height={16} />
+                      </button>
+                    )}
                     <button className="btn-icon" title="Edit" onClick={() => onEdit(transaction)}>
                       <IconEdit width={16} height={16} />
                     </button>

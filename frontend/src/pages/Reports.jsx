@@ -16,10 +16,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { getDashboardMonthly, getDashboardSummary } from "../services/api";
 import { categoryColor } from "../utils/categoryColor";
-
-function formatMoney(amount) {
-  return `₹${amount.toFixed(2)}`;
-}
+import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 function monthLabel(monthStr) {
   const [year, month] = monthStr.split("-");
@@ -28,6 +25,8 @@ function monthLabel(monthStr) {
 }
 
 function CurrencyTooltip({ active, payload, label }) {
+  const { user } = useAuth();
+  const formatMoney = (amount) => formatMoneyIn(amount, user.currency);
   if (!active || !payload?.length) return null;
   return (
     <div
@@ -51,7 +50,8 @@ function CurrencyTooltip({ active, payload, label }) {
 }
 
 function Reports() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const formatMoney = (amount) => formatMoneyIn(amount, user.currency);
   const [monthly, setMonthly] = useState(null);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);

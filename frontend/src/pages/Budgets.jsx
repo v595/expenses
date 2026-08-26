@@ -3,13 +3,11 @@ import { useEffect, useState } from "react";
 import { IconTrash } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { deleteBudget, getBudgets, setBudget } from "../services/api";
-
-function formatMoney(amount) {
-  return `₹${amount.toFixed(2)}`;
-}
+import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 function Budgets() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const formatMoney = (amount) => formatMoneyIn(amount, user.currency);
   const [budgets, setBudgets] = useState([]);
   const [form, setForm] = useState({ category: "", monthly_limit: "" });
   const [error, setError] = useState(null);

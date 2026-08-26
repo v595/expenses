@@ -17,3 +17,9 @@ def summary():
 @login_required
 def monthly():
     return jsonify(dashboard_service.get_monthly(g.current_user["id"])), 200
+
+
+@dashboard_bp.route("/api/dashboard/insights", methods=["GET"])
+@login_required
+def insights():
+    return jsonify(dashboard_service.get_insights(g.current_user["id"])), 200

@@ -11,6 +11,7 @@ transactions_bp = Blueprint("transactions", __name__)
 def list_transactions():
     recurring_service.materialize_due(g.current_user["id"])
     try:
+        tag_id = request.args.get("tag_id")
         transactions = transaction_service.get_transactions(
             g.current_user["id"],
             category=request.args.get("category"),
@@ -18,6 +19,7 @@ def list_transactions():
             start_date=request.args.get("start_date"),
             end_date=request.args.get("end_date"),
             search=request.args.get("search"),
+            tag_id=int(tag_id) if tag_id else None,
         )
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -63,3 +65,14 @@ def delete_transaction(transaction_id):
     if not deleted:
         return jsonify({"error": "Transaction not found"}), 404
     return jsonify({"message": "Transaction deleted successfully"}), 200
+
+
+@transactions_bp.route("/api/transactions/import", methods=["POST"])
+@login_required
+def import_transactions():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = transaction_service.bulk_import(g.current_user["id"], data.get("rows"))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(result), 200
