@@ -113,6 +113,7 @@ def delete_user(user_id):
     conn.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM bills WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM notifications WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM activity_logs WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()

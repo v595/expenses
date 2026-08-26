@@ -1,3 +1,4 @@
+from app.models import activity_log as activity_log_model
 from app.models import user as user_model
 from app.services.auth_service import to_public_user
 
@@ -23,6 +24,7 @@ def update_settings(user, data):
     updated = user_model.update_settings(
         user["id"], currency, int(notify_budget_alerts), int(notify_bill_reminders)
     )
+    activity_log_model.log(user["id"], "Updated settings", f"currency={currency}")
     return to_public_user(updated)
 
 

@@ -194,6 +194,42 @@
     .clear-link { font-size: 0.8rem; color: var(--muted); text-decoration: none; margin-left: 0.6rem; }
     .clear-link:hover { color: var(--text); }
 
+    /* --- Two-column split --- */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .split-grid { grid-template-columns: 1fr; }
+    }
+
+    /* --- Activity feed --- */
+    .activity-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .activity-list li {
+      display: flex;
+      gap: 0.65rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .activity-list li:last-child { border-bottom: none; }
+    .activity-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--brand-soft); color: var(--brand);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.72rem; flex-shrink: 0;
+    }
+    .activity-body { min-width: 0; }
+    .activity-time { color: var(--muted); font-size: 0.76rem; margin-top: 0.1rem; }
+
     /* --- Signups chart --- */
     .bar-row { display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; font-size: 0.84rem; }
     .bar-row:last-child { margin-bottom: 0; }
@@ -259,6 +295,7 @@
     .amount.income { color: var(--income); }
     .amount.expense { color: var(--expense); }
 
+    .row-actions { display: flex; align-items: center; gap: 0.25rem; }
     .delete-form { display: inline; }
     .icon-btn {
       border: none;
@@ -270,9 +307,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      text-decoration: none;
       transition: background 0.15s, color 0.15s;
     }
     .icon-btn:hover { background: var(--expense-soft); color: var(--expense); }
+    .icon-btn-neutral:hover { background: var(--brand-soft); color: var(--brand); }
 
     .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
     .empty-state svg { color: #d1d5db; margin-bottom: 0.6rem; }
@@ -363,24 +402,50 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <h2>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Signups by Month
-        </h2>
-      </div>
-      {% if stats.signups_by_month %}
-        {% for m in stats.signups_by_month %}
-        <div class="bar-row">
-          <span class="month">{{ m.month }}</span>
-          <span class="bar-track"><span class="bar-fill" style="width: {{ (m.count / max_signups * 100)|round(1) }}%"></span></span>
-          <span class="count">{{ m.count }}</span>
+    <div class="split-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Signups by Month
+          </h2>
         </div>
-        {% endfor %}
-      {% else %}
-        <p class="empty-note">No signups yet.</p>
-      {% endif %}
+        {% if stats.signups_by_month %}
+          {% for m in stats.signups_by_month %}
+          <div class="bar-row">
+            <span class="month">{{ m.month }}</span>
+            <span class="bar-track"><span class="bar-fill" style="width: {{ (m.count / max_signups * 100)|round(1) }}%"></span></span>
+            <span class="count">{{ m.count }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-note">No signups yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Recent Activity
+          </h2>
+        </div>
+        {% if activity %}
+        <ul class="activity-list">
+          {% for a in activity %}
+          <li>
+            <span class="activity-avatar">{{ a.user_name[:1]|upper }}</span>
+            <div class="activity-body">
+              <div><strong>{{ a.user_name }}</strong> {{ a.action|lower }}{% if a.details %} — {{ a.details }}{% endif %}</div>
+              <div class="activity-time">{{ a.time_label }}</div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-note">No activity recorded yet.</p>
+        {% endif %}
+      </div>
     </div>
 
     <div class="card">
@@ -436,13 +501,18 @@
               <td class="amount income">{{ "{:,.2f}".format(u.income) }}</td>
               <td class="amount expense">{{ "{:,.2f}".format(u.expenses) }}</td>
               <td>
-                {% if u.id != current_admin_id %}
-                <form class="delete-form" method="post" action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete this user and all of their data?');">
-                  <button type="submit" class="icon-btn" title="Delete user">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
-                </form>
-                {% endif %}
+                <div class="row-actions">
+                  <a class="icon-btn icon-btn-neutral" href="{{ url_for('admin_dashboard.user_activity', user_id=u.id) }}" title="View activity">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </a>
+                  {% if u.id != current_admin_id %}
+                  <form class="delete-form" method="post" action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete this user and all of their data?');">
+                    <button type="submit" class="icon-btn" title="Delete user">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
               </td>
             </tr>
             {% endfor %}

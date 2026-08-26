@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.models import activity_log as activity_log_model
 from app.models import goal as goal_model
 
 MAX_NAME_LENGTH = 80
@@ -34,7 +35,9 @@ def create_goal(user_id, data):
         except ValueError:
             raise ValueError("Target date must be a valid date in YYYY-MM-DD format")
 
-    return goal_model.create_goal(user_id, name.strip(), float(target_amount), target_date)
+    goal = goal_model.create_goal(user_id, name.strip(), float(target_amount), target_date)
+    activity_log_model.log(user_id, "Created goal", f"{name.strip()} (target {float(target_amount):.2f})")
+    return goal
 
 
 def add_funds(goal_id, user_id, data):
@@ -50,8 +53,12 @@ def add_funds(goal_id, user_id, data):
     updated = goal_model.add_funds(goal_id, user_id, float(amount))
     if updated is None:
         raise ValueError("Goal not found")
+    activity_log_model.log(user_id, "Added funds to goal", f"{updated['name']} (+{float(amount):.2f})")
     return updated
 
 
 def delete_goal(goal_id, user_id):
+    goal = goal_model.get_goal_by_id(goal_id, user_id)
     goal_model.delete_goal(goal_id, user_id)
+    if goal:
+        activity_log_model.log(user_id, "Deleted goal", goal["name"])

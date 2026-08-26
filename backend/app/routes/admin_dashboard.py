@@ -91,16 +91,35 @@ def dashboard():
 
     max_signups = max((m["count"] for m in stats["signups_by_month"]), default=1) or 1
 
+    activity = admin_service.get_recent_activity(50)
+    for a in activity:
+        a["time_label"] = _time_ago(a["created_at"])
+
     return render_template(
         "admin_dashboard.html",
         stats=stats,
         users=users,
+        activity=activity,
         admin_name=admin_user["name"],
         admin_avatar=admin_user["name"][:1].upper(),
         current_admin_id=session[SESSION_KEY],
         max_signups=max_signups,
         search=search,
     )
+
+
+@admin_dashboard_bp.route("/admin/users/<int:user_id>/activity")
+@dashboard_admin_required
+def user_activity(user_id):
+    user = admin_service.get_user(user_id)
+    if user is None:
+        return redirect(url_for("admin_dashboard.dashboard"))
+
+    activity = admin_service.get_user_activity(user_id, 200)
+    for a in activity:
+        a["time_label"] = _time_ago(a["created_at"])
+
+    return render_template("admin_user_activity.html", target_user=user, activity=activity)
 
 
 @admin_dashboard_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])

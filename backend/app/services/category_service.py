@@ -1,3 +1,4 @@
+from app.models import activity_log as activity_log_model
 from app.models import category as category_model
 
 MAX_NAME_LENGTH = 60
@@ -30,8 +31,11 @@ def create_category(user_id, data):
     if existing:
         raise ValueError("That category already exists")
 
-    return category_model.create_category(user_id, name, type_, color)
+    category = category_model.create_category(user_id, name, type_, color)
+    activity_log_model.log(user_id, "Created category", f"{name} ({type_})")
+    return category
 
 
 def delete_category(category_id, user_id):
     category_model.delete_category(category_id, user_id)
+    activity_log_model.log(user_id, "Deleted category", f"#{category_id}")

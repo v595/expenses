@@ -237,3 +237,9 @@ export function deleteTag(id, token) {
 export function getDashboardInsights(token) {
   return request("/dashboard/insights", { token });
 }
+
+// --- Activity ---
+
+export function logPageView(path, token) {
+  return request("/activity/pageview", { method: "POST", body: { path }, token });
+}

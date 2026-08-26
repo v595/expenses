@@ -4,6 +4,7 @@ from flask_cors import CORS
 from app.config import Config
 from app.database import init_db
 from app.routes.accounts import accounts_bp
+from app.routes.activity import activity_bp
 from app.routes.admin import admin_bp
 from app.routes.admin_dashboard import admin_dashboard_bp
 from app.routes.auth import auth_bp
@@ -31,6 +32,7 @@ def create_app():
     init_db()
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(activity_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(dashboard_bp)

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from app.models import activity_log as activity_log_model
 from app.models import budget as budget_model
 from app.models import transaction as transaction_model
 
@@ -34,7 +35,9 @@ def set_budget(user_id, data):
         raise ValueError("Monthly limit must be greater than zero")
 
     budget_model.upsert_budget(user_id, category.strip(), float(monthly_limit))
+    activity_log_model.log(user_id, "Set budget", f"{category.strip()} limit {float(monthly_limit):.2f}")
 
 
 def delete_budget(user_id, category):
     budget_model.delete_budget(user_id, category)
+    activity_log_model.log(user_id, "Deleted budget", category)

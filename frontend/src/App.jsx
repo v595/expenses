@@ -1,7 +1,9 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { logPageView } from "./services/api";
 import Accounts from "./pages/Accounts";
 import Bills from "./pages/Bills";
 import Budgets from "./pages/Budgets";
@@ -128,10 +130,25 @@ function AppRoutes() {
   );
 }
 
+// Reports every route change to the backend so admin can see page activity
+// per user. Best-effort — a failed ping shouldn't affect navigation at all.
+function usePageViewTracking() {
+  const { isAuthenticated, token } = useAuth();
+  const location = useLocation();
+  const lastPath = useRef(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || lastPath.current === location.pathname) return;
+    lastPath.current = location.pathname;
+    logPageView(location.pathname, token).catch(() => {});
+  }, [isAuthenticated, token, location.pathname]);
+}
+
 // The sidebar layout only makes sense once logged in; logged-out pages
 // (login/register) get a plain top bar instead of a side-by-side shell.
 function Layout() {
   const { isAuthenticated } = useAuth();
+  usePageViewTracking();
 
   if (!isAuthenticated) {
     return (

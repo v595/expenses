@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from app.database import get_db_connection
+from app.models import activity_log as activity_log_model
 from app.models import user as user_model
 from app.services.auth_service import to_public_user
 
@@ -114,9 +115,22 @@ def get_user_transactions(user_id):
 def delete_user(user_id, requesting_user_id):
     if user_id == requesting_user_id:
         raise ValueError("You can't delete your own account from here")
+    target = user_model.get_user_by_id(user_id)
     user_model.delete_user(user_id)
+    if target:
+        activity_log_model.log(
+            requesting_user_id, "Deleted user (admin action)", f"{target['name']} ({target['email']})"
+        )
 
 
 def get_user(user_id):
     user = user_model.get_user_by_id(user_id)
     return to_public_user(user) if user else None
+
+
+def get_recent_activity(limit=50):
+    return activity_log_model.get_recent(limit)
+
+
+def get_user_activity(user_id, limit=100):
+    return activity_log_model.get_for_user(user_id, limit)

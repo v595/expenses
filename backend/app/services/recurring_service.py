@@ -1,6 +1,7 @@
 import calendar
 from datetime import date, datetime, timedelta
 
+from app.models import activity_log as activity_log_model
 from app.models import recurring as recurring_model
 from app.models import transaction as transaction_model
 
@@ -82,10 +83,13 @@ def create_recurring(data, user_id):
     if len(description) > MAX_DESCRIPTION_LENGTH:
         raise ValueError(f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer")
 
-    return recurring_model.create_recurring(
+    rule = recurring_model.create_recurring(
         user_id, float(amount), type_, category.strip(), description.strip(), frequency, start_date
     )
+    activity_log_model.log(user_id, "Created recurring rule", f"{category.strip()} ({frequency})")
+    return rule
 
 
 def delete_recurring(recurring_id, user_id):
     recurring_model.delete_recurring(recurring_id, user_id)
+    activity_log_model.log(user_id, "Deleted recurring rule", f"#{recurring_id}")

@@ -1,4 +1,5 @@
 from app.models import account as account_model
+from app.models import activity_log as activity_log_model
 
 VALID_TYPES = ("cash", "bank", "card", "savings", "other")
 MAX_NAME_LENGTH = 60
@@ -35,7 +36,9 @@ def get_accounts(user_id):
 
 def create_account(user_id, data):
     name, type_, balance, color = _validate(data)
-    return account_model.create_account(user_id, name, type_, balance, color)
+    account = account_model.create_account(user_id, name, type_, balance, color)
+    activity_log_model.log(user_id, "Created account", f"{name} ({type_})")
+    return account
 
 
 def update_account(account_id, user_id, data):
@@ -43,8 +46,12 @@ def update_account(account_id, user_id, data):
     updated = account_model.update_account(account_id, user_id, name, type_, color)
     if updated is None:
         raise ValueError("Account not found")
+    activity_log_model.log(user_id, "Updated account", name)
     return updated
 
 
 def delete_account(account_id, user_id):
+    account = account_model.get_account_by_id(account_id, user_id)
     account_model.delete_account(account_id, user_id)
+    if account:
+        activity_log_model.log(user_id, "Deleted account", account["name"])

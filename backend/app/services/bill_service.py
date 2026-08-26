@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.models import activity_log as activity_log_model
 from app.models import bill as bill_model
 from app.services.recurring_service import _advance
 
@@ -39,9 +40,11 @@ def create_bill(user_id, data):
     if repeat_frequency not in VALID_FREQUENCIES:
         raise ValueError(f"Repeat frequency must be one of {', '.join(VALID_FREQUENCIES)}")
 
-    return bill_model.create_bill(
+    bill = bill_model.create_bill(
         user_id, name.strip(), float(amount), due_date, repeat_frequency
     )
+    activity_log_model.log(user_id, "Created bill", f"{name.strip()} {float(amount):.2f} due {due_date}")
+    return bill
 
 
 def pay_bill(bill_id, user_id):
@@ -55,8 +58,12 @@ def pay_bill(bill_id, user_id):
         next_date = _advance(bill["due_date"], bill["repeat_frequency"])
         bill_model.reschedule(bill_id, next_date)
 
+    activity_log_model.log(user_id, "Paid bill", f"{bill['name']} {bill['amount']:.2f}")
     return bill_model.get_bill_by_id(bill_id, user_id)
 
 
 def delete_bill(bill_id, user_id):
+    bill = bill_model.get_bill_by_id(bill_id, user_id)
     bill_model.delete_bill(bill_id, user_id)
+    if bill:
+        activity_log_model.log(user_id, "Deleted bill", bill["name"])

@@ -181,6 +181,14 @@ def init_db():
                 tag_id INTEGER NOT NULL REFERENCES tags (id),
                 PRIMARY KEY (transaction_id, tag_id)
             );
+
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users (id),
+                action TEXT NOT NULL,
+                details TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
         conn.commit()
@@ -315,6 +323,15 @@ def init_db():
             PRIMARY KEY (transaction_id, tag_id),
             FOREIGN KEY (transaction_id) REFERENCES transactions (id),
             FOREIGN KEY (tag_id) REFERENCES tags (id)
+        );
+
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            details TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         );
         """
     )

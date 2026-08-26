@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.models import activity_log as activity_log_model
 from app.models import user as user_model
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -74,6 +75,7 @@ def register(data):
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
     user_model.record_login(user["id"], _now_iso())
+    activity_log_model.log(user["id"], "Registered")
 
     return to_public_user(user), token
 
@@ -94,6 +96,7 @@ def login(data):
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
     user_model.record_login(user["id"], _now_iso())
+    activity_log_model.log(user["id"], "Logged in")
 
     return to_public_user(user), token
 
@@ -109,6 +112,7 @@ def update_profile(user, data):
         if not isinstance(name, str) or not name.strip():
             raise AuthError("Name cannot be empty", 400)
         updated = user_model.update_name(user["id"], name.strip())
+        activity_log_model.log(user["id"], "Updated profile name", name.strip())
 
     avatar = data.get("avatar")
     if avatar is not None:
@@ -117,6 +121,7 @@ def update_profile(user, data):
         if len(avatar) > MAX_AVATAR_LENGTH:
             raise AuthError("Image is too large (max ~2MB)", 400)
         updated = user_model.update_avatar(user["id"], avatar)
+        activity_log_model.log(user["id"], "Updated profile picture")
 
     new_password = data.get("new_password")
     if new_password is not None:
@@ -128,12 +133,14 @@ def update_profile(user, data):
         if not isinstance(new_password, str) or len(new_password) < MIN_PASSWORD_LENGTH:
             raise AuthError(f"New password must be at least {MIN_PASSWORD_LENGTH} characters", 400)
         user_model.update_password(user["id"], generate_password_hash(new_password))
+        activity_log_model.log(user["id"], "Changed password")
 
     return to_public_user(updated)
 
 
 def logout(user):
     user_model.set_user_token(user["id"], None)
+    activity_log_model.log(user["id"], "Logged out")
 
 
 def get_user_from_token(token):

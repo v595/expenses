@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ target_user.name }} — Activity — Expense Tracker</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --border: #e7e9f0;
+      --text: #111827;
+      --muted: #6b7280;
+      --brand: #4f46e5;
+      --brand-end: #7c3aed;
+      --brand-soft: #eef2ff;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 2rem;
+      background: #0f1117;
+      color: white;
+    }
+    .brand { display: flex; align-items: center; gap: 0.7rem; font-weight: 700; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    header a { color: rgba(255, 255, 255, 0.75); text-decoration: none; font-size: 0.85rem; }
+    header a:hover { color: white; }
+    main { max-width: 780px; margin: 0 auto; padding: 2rem 1.75rem 3.5rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      color: var(--brand); text-decoration: none; font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+    .profile-header {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow);
+    }
+    .profile-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.2rem; flex-shrink: 0;
+    }
+    .profile-name { font-size: 1.15rem; font-weight: 700; margin: 0; }
+    .profile-email { color: var(--muted); font-size: 0.87rem; margin: 0.15rem 0 0; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.5rem; box-shadow: var(--shadow);
+    }
+    .card h2 { margin: 0 0 1.1rem; font-size: 1rem; }
+    .timeline { list-style: none; margin: 0; padding: 0; }
+    .timeline li {
+      display: flex; gap: 0.9rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);
+    }
+    .timeline li:last-child { border-bottom: none; }
+    .timeline-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--brand);
+      margin-top: 0.4rem; flex-shrink: 0;
+    }
+    .timeline-action { font-weight: 600; font-size: 0.9rem; }
+    .timeline-details { color: var(--muted); font-size: 0.84rem; margin-top: 0.1rem; }
+    .timeline-time { color: #9ca3af; font-size: 0.76rem; margin-top: 0.2rem; }
+    .empty-note { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-mark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-4a2 2 0 0 1 0-4z" /></svg>
+      </span>
+      Expense Tracker Admin
+    </div>
+    <a href="{{ url_for('admin_dashboard.logout') }}">Log out</a>
+  </header>
+
+  <main>
+    <a class="back-link" href="{{ url_for('admin_dashboard.dashboard') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to dashboard
+    </a>
+
+    <div class="profile-header">
+      <span class="profile-avatar">{{ target_user.name[:1]|upper }}</span>
+      <div>
+        <p class="profile-name">{{ target_user.name }}</p>
+        <p class="profile-email">{{ target_user.email }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity History ({{ activity|length }})</h2>
+      {% if activity %}
+      <ul class="timeline">
+        {% for a in activity %}
+        <li>
+          <span class="timeline-dot"></span>
+          <div>
+            <div class="timeline-action">{{ a.action }}{% if a.details %} — {{ a.details }}{% endif %}</div>
+            <div class="timeline-time">{{ a.time_label }} &middot; {{ a.created_at }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty-note">No activity recorded for this user yet.</p>
+      {% endif %}
+    </div>
+  </main>
+</body>
+</html>

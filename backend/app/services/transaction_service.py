@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from app.models import account as account_model
+from app.models import activity_log as activity_log_model
 from app.models import tag as tag_model
 from app.models import transaction as transaction_model
 from app.services import tag_service
@@ -100,6 +101,9 @@ def create_transaction(data, user_id):
     tag_ids = tag_service.resolve_tag_names(user_id, clean["tags"])
     tag_model.set_tags_for_transaction(transaction["id"], tag_ids)
 
+    activity_log_model.log(
+        user_id, "Created transaction", f"{clean['category']} {clean['amount']:.2f} ({clean['type']})"
+    )
     return _attach_extras(transaction)
 
 
@@ -172,6 +176,9 @@ def update_transaction(transaction_id, data, user_id):
     tag_ids = tag_service.resolve_tag_names(user_id, clean["tags"])
     tag_model.set_tags_for_transaction(transaction_id, tag_ids)
 
+    activity_log_model.log(
+        user_id, "Updated transaction", f"{clean['category']} {clean['amount']:.2f} ({clean['type']})"
+    )
     return _attach_extras(updated)
 
 
@@ -186,6 +193,9 @@ def delete_transaction(transaction_id, user_id):
         )
 
     transaction_model.delete_transaction(transaction_id)
+    activity_log_model.log(
+        user_id, "Deleted transaction", f"{existing['category']} {existing['amount']:.2f}"
+    )
     return True
 
 
@@ -208,4 +218,6 @@ def bulk_import(user_id, rows):
         )
         imported += 1
 
+    if imported:
+        activity_log_model.log(user_id, "Imported transactions via CSV", f"{imported} row(s)")
     return {"imported": imported, "errors": errors}
