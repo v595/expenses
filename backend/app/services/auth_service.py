@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models import activity_log as activity_log_model
+from app.models import system_setting as system_setting_model
 from app.models import user as user_model
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -37,6 +38,10 @@ def to_public_user(user):
         "notify_bill_reminders": bool(user["notify_bill_reminders"])
         if "notify_bill_reminders" in user.keys()
         else True,
+        "role_id": user["role_id"] if "role_id" in user.keys() else None,
+        "role_name": user["role_name"] if "role_name" in user.keys() else None,
+        "is_suspended": bool(user["is_suspended"]) if "is_suspended" in user.keys() else False,
+        "last_login_at": user["last_login_at"] if "last_login_at" in user.keys() else None,
     }
 
 
@@ -63,7 +68,14 @@ def _now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def is_maintenance_mode():
+    return system_setting_model.get("maintenance_mode", "false") == "true"
+
+
 def register(data):
+    if is_maintenance_mode():
+        raise AuthError("The platform is temporarily down for maintenance", 503)
+
     clean = _validate_register_data(data)
 
     if user_model.get_user_by_email(clean["email"]):
@@ -71,6 +83,8 @@ def register(data):
 
     password_hash = generate_password_hash(clean["password"])
     user = user_model.create_user(clean["name"], clean["email"], password_hash)
+    user_model.promote_first_user_if_no_admin()
+    user = user_model.get_user_by_id(user["id"])
 
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
@@ -89,9 +103,23 @@ def login(data):
     if not isinstance(email, str) or not isinstance(password, str):
         raise AuthError("Email and password are required", 400)
 
-    user = user_model.get_user_by_email(email.strip().lower())
+    email_clean = email.strip().lower()
+    user = user_model.get_user_by_email(email_clean)
     if user is None or not check_password_hash(user["password_hash"], password):
+        activity_log_model.log(
+            user["id"] if user else None,
+            "Failed login attempt",
+            email_clean,
+            entity_type="security",
+        )
         raise AuthError("Invalid email or password", 401)
+
+    if user.get("is_suspended"):
+        activity_log_model.log(user["id"], "Login rejected (account suspended)", entity_type="security")
+        raise AuthError("This account has been suspended", 403)
+
+    if is_maintenance_mode() and not user.get("is_admin"):
+        raise AuthError("The platform is temporarily down for maintenance", 503)
 
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)

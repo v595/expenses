@@ -1,0 +1,35 @@
+{% extends "admin_base.html" %}
+{% block title %}System Health{% endblock %}
+{% block content %}
+    <h1 class="page-title">System Health</h1>
+    <p class="page-subtitle">Only checks that can actually be measured against this app's real infrastructure — no fabricated metrics.</p>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="stat-icon {{ 'income' if health.overall == 'healthy' else 'expense' }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        <div>
+          <p class="stat-label">Overall</p>
+          <p class="stat-value {{ health.overall }}">{{ health.overall|capitalize }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead>
+          <tbody>
+            {% for check in health.checks %}
+            <tr>
+              <td class="user-name">{{ check.name }}</td>
+              <td><span class="badge {{ check.status }}"><span class="status-dot"></span>{{ check.status|capitalize }}</span></td>
+              <td class="user-email">{{ check.detail }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+{% endblock %}

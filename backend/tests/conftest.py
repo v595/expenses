@@ -4,6 +4,7 @@ import tempfile
 import pytest
 
 from app import create_app
+from app.extensions import db
 
 
 @pytest.fixture
@@ -17,6 +18,14 @@ def client(monkeypatch):
 
     with app.test_client() as test_client:
         yield test_client
+
+    # SQLAlchemy pools a persistent connection to the SQLite file (unlike the
+    # old per-request sqlite3.connect()/close()), so it has to be disposed
+    # before the file can be removed — otherwise Windows refuses to unlink a
+    # file that's still open.
+    with app.app_context():
+        db.session.remove()
+        db.engine.dispose()
 
     os.close(db_fd)
     os.unlink(db_path)

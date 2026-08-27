@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import Blueprint, g, jsonify, request
 
-from app.services import auth_service
+from app.services import authz_service, auth_service
 from app.services.auth_service import AuthError
 
 auth_bp = Blueprint("auth", __name__)
@@ -17,13 +17,19 @@ def _extract_token():
 
 def login_required(f):
     """Looks up the user for the request's token and stashes it on flask.g.
-    Returns 401 if there's no valid token. Use on any route that needs a logged-in user."""
+    Returns 401 if there's no valid token, 403 if the account is suspended,
+    503 if the platform is in maintenance mode and this user isn't an admin.
+    Use on any route that needs a logged-in user."""
 
     @wraps(f)
     def wrapper(*args, **kwargs):
         user = auth_service.get_user_from_token(_extract_token())
         if user is None:
             return jsonify({"error": "Authentication required"}), 401
+        if user.get("is_suspended"):
+            return jsonify({"error": "This account has been suspended"}), 403
+        if auth_service.is_maintenance_mode() and not user.get("is_admin"):
+            return jsonify({"error": "The platform is temporarily down for maintenance"}), 503
         g.current_user = user
         return f(*args, **kwargs)
 
@@ -33,13 +39,49 @@ def login_required(f):
 def admin_required(f):
     """Same as login_required, but also requires the user's is_admin flag.
     Returns 404 (not 403) for non-admins, so the admin API surface doesn't
-    even reveal its own existence to a regular user."""
+    even reveal its own existence to a regular user. Kept for the
+    pre-existing /api/admin/* routes; newer admin/super-admin routes use
+    require_permission below, which returns proper 401/403 codes."""
 
     @wraps(f)
     @login_required
     def wrapper(*args, **kwargs):
         if not g.current_user.get("is_admin"):
             return jsonify({"error": "Not found"}), 404
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+def require_permission(permission_key):
+    """Enforces a specific admin permission (see authz_service.PERMISSIONS).
+    401 if not logged in, 403 if logged in but lacking the permission —
+    distinct from admin_required's deliberate 404-obscurity, since these
+    routes are meant to be testably distinguishable per the RBAC test suite."""
+
+    def decorator(f):
+        @wraps(f)
+        @login_required
+        def wrapper(*args, **kwargs):
+            if not authz_service.has_permission(g.current_user, permission_key):
+                return jsonify({"error": "Forbidden"}), 403
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def require_super_admin(f):
+    """Hard role check (not just a permission grant) for the handful of
+    actions that must never be reachable by a plain ADMIN, no matter how the
+    permissions editor is configured — e.g. creating another SUPER_ADMIN."""
+
+    @wraps(f)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not authz_service.is_super_admin(g.current_user):
+            return jsonify({"error": "Forbidden"}), 403
         return f(*args, **kwargs)
 
     return wrapper

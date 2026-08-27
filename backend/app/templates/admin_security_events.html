@@ -1,0 +1,27 @@
+{% extends "admin_base.html" %}
+{% block title %}Security Events{% endblock %}
+{% block content %}
+    <h1 class="page-title">Security Events</h1>
+    <p class="page-subtitle">{{ entries|length }} events — currently: failed login attempts and suspended-account login rejections.</p>
+
+    <div class="card">
+      {% if entries %}
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>When</th><th>Event</th><th>Detail</th></tr></thead>
+          <tbody>
+            {% for e in entries %}
+            <tr>
+              <td>{{ e.time_label }}</td>
+              <td class="user-name">{{ e.action }}</td>
+              <td class="user-email">{{ e.details or "" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty-note">No security events recorded yet.</p>
+      {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "admin_base.html" %}
+{% block title %}Feature Flags{% endblock %}
+{% block content %}
+    <h1 class="page-title">Feature Flags</h1>
+    <p class="page-subtitle">Toggle platform features on/off. These flags currently exist as data-backed toggles — none of the listed features are built yet, so there is nothing to enable in the app itself.</p>
+
+    <div class="card">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Feature</th><th>Description</th><th>Status</th>{% if can_manage %}<th></th>{% endif %}</tr></thead>
+          <tbody>
+            {% for flag in flags %}
+            <tr>
+              <td class="user-name">{{ flag.name }}</td>
+              <td class="user-email">{{ flag.description }}</td>
+              <td>
+                <span class="badge {{ 'online' if flag.is_enabled else 'offline' }}">
+                  <span class="status-dot"></span>{{ "On" if flag.is_enabled else "Off" }}
+                </span>
+              </td>
+              {% if can_manage %}
+              <td>
+                <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.toggle_feature_flag', key=flag.key) }}">
+                  <input type="hidden" name="enabled" value="{{ 'true' if flag.is_enabled else 'false' }}" />
+                  <button type="submit" class="toggle-switch {{ 'on' if flag.is_enabled else '' }}" aria-label="Toggle {{ flag.name }}"></button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+{% endblock %}

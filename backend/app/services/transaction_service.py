@@ -2,6 +2,7 @@ from datetime import datetime
 
 from app.models import account as account_model
 from app.models import activity_log as activity_log_model
+from app.models import category as category_model
 from app.models import tag as tag_model
 from app.models import transaction as transaction_model
 from app.services import tag_service
@@ -78,11 +79,23 @@ def _attach_extras(transaction):
     return transaction
 
 
+def _resolve_category_id(user_id, category_name, type_):
+    """Looks up (or silently creates) the Category row matching this
+    transaction's free-text category/type, so transactions.category_id is a
+    real, always-current FK — without requiring every existing reader of the
+    `category` text column (spending-by-category, budgets, CSV export) to
+    change at the same time."""
+    category = category_model.get_or_create_category(user_id, category_name, type_)
+    return category["id"]
+
+
 def create_transaction(data, user_id):
     clean = validate_transaction_data(data)
 
     if clean["account_id"] is not None and account_model.get_account_by_id(clean["account_id"], user_id) is None:
         raise ValueError("Account not found")
+
+    category_id = _resolve_category_id(user_id, clean["category"], clean["type"])
 
     transaction = transaction_model.create_transaction(
         user_id,
@@ -93,6 +106,7 @@ def create_transaction(data, user_id):
         clean["date"],
         clean["account_id"],
         clean["receipt"],
+        category_id=category_id,
     )
 
     if clean["account_id"] is not None:
@@ -159,6 +173,8 @@ def update_transaction(transaction_id, data, user_id):
             existing["account_id"], -_balance_delta(existing["amount"], existing["type"])
         )
 
+    category_id = _resolve_category_id(user_id, clean["category"], clean["type"])
+
     updated = transaction_model.update_transaction(
         transaction_id,
         clean["amount"],
@@ -168,6 +184,7 @@ def update_transaction(transaction_id, data, user_id):
         clean["date"],
         clean["account_id"],
         clean["receipt"] if clean["receipt"] is not None else existing["receipt"],
+        category_id=category_id,
     )
 
     if clean["account_id"] is not None:
@@ -213,8 +230,15 @@ def bulk_import(user_id, rows):
         except ValueError as e:
             errors.append({"row": index + 1, "error": str(e)})
             continue
+        category_id = _resolve_category_id(user_id, clean["category"], clean["type"])
         transaction_model.create_transaction(
-            user_id, clean["amount"], clean["type"], clean["category"], clean["description"], clean["date"]
+            user_id,
+            clean["amount"],
+            clean["type"],
+            clean["category"],
+            clean["description"],
+            clean["date"],
+            category_id=category_id,
         )
         imported += 1
 

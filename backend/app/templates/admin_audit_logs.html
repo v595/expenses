@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+{% block title %}Audit Logs{% endblock %}
+{% block content %}
+    <div class="card-header" style="margin-bottom: 1.5rem;">
+      <div>
+        <h1 class="page-title" style="margin-bottom: 0.2rem;">Audit Logs</h1>
+        <p class="page-subtitle" style="margin: 0;">{{ entries|length }} entries.</p>
+      </div>
+      <div>
+        <a class="btn {{ 'btn-primary' if admin_only else 'btn-secondary' }}" href="{{ url_for('admin_dashboard.audit_logs', scope='admin') }}">Admin actions</a>
+        <a class="btn {{ 'btn-primary' if not admin_only else 'btn-secondary' }}" href="{{ url_for('admin_dashboard.audit_logs', scope='all') }}">All activity</a>
+      </div>
+    </div>
+
+    <div class="card">
+      {% if entries %}
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>When</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+          <tbody>
+            {% for e in entries %}
+            <tr>
+              <td>{{ e.time_label }}</td>
+              <td class="user-email">{{ e.user_name or "—" }}</td>
+              <td class="user-name">{{ e.action }}</td>
+              <td class="user-email">{{ e.details or "" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty-note">No matching log entries.</p>
+      {% endif %}
+    </div>
+{% endblock %}

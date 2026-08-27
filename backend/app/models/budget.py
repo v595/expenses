@@ -1,32 +1,22 @@
-from app.database import get_db_connection
+from app.extensions import db
+from app.models.orm import Budget
 
 
 def get_budgets_by_user(user_id):
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT category, monthly_limit FROM budgets WHERE user_id = ? ORDER BY category",
-        (user_id,),
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    rows = db.session.query(Budget).filter_by(user_id=user_id).order_by(Budget.category).all()
+    return [b.to_dict() for b in rows]
 
 
 def upsert_budget(user_id, category, monthly_limit):
-    conn = get_db_connection()
-    conn.execute(
-        """
-        INSERT INTO budgets (user_id, category, monthly_limit)
-        VALUES (?, ?, ?)
-        ON CONFLICT (user_id, category) DO UPDATE SET monthly_limit = excluded.monthly_limit
-        """,
-        (user_id, category, monthly_limit),
-    )
-    conn.commit()
-    conn.close()
+    budget = db.session.query(Budget).filter_by(user_id=user_id, category=category).first()
+    if budget is None:
+        budget = Budget(user_id=user_id, category=category, monthly_limit=monthly_limit)
+        db.session.add(budget)
+    else:
+        budget.monthly_limit = monthly_limit
+    db.session.commit()
 
 
 def delete_budget(user_id, category):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM budgets WHERE user_id = ? AND category = ?", (user_id, category))
-    conn.commit()
-    conn.close()
+    db.session.query(Budget).filter_by(user_id=user_id, category=category).delete()
+    db.session.commit()

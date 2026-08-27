@@ -1,0 +1,34 @@
+{% extends "admin_base.html" %}
+{% block title %}Roles & Permissions{% endblock %}
+{% block content %}
+    <h1 class="page-title">Roles & Permissions</h1>
+    <p class="page-subtitle">{{ role_list|length }} roles, {{ all_permissions|length }} permission keys.</p>
+
+    {% for role in role_list %}
+    <div class="card">
+      <div class="card-header">
+        <h2>{{ role.name }} <span style="color: var(--muted); font-weight: 600; font-size: 0.82rem;">({{ role.user_count }} user{{ "s" if role.user_count != 1 else "" }})</span></h2>
+      </div>
+      <p class="page-subtitle" style="margin-bottom: 1rem;">{{ role.description }}</p>
+
+      {% if role.name == "SUPER_ADMIN" %}
+      <p class="empty-note">Super Admin always has every permission — not editable.</p>
+      {% else %}
+      <form method="post">
+        <input type="hidden" name="role_id" value="{{ role.id }}" />
+        <div class="checkbox-grid">
+          {% for key in all_permissions %}
+          <label class="checkbox-item">
+            <input type="checkbox" name="permission" value="{{ key }}" {{ "checked" if key in role.permissions else "" }} {{ "disabled" if not can_manage else "" }} />
+            {{ key }}
+          </label>
+          {% endfor %}
+        </div>
+        {% if can_manage %}
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save {{ role.name }} permissions</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+{% endblock %}

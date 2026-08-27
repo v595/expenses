@@ -1,6 +1,6 @@
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
-from app.routes.auth import admin_required
+from app.routes.auth import admin_required, require_permission
 from app.services import admin_service
 
 admin_bp = Blueprint("admin", __name__)
@@ -34,3 +34,40 @@ def delete_user(user_id):
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify({"message": "User deleted"}), 200
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/suspend", methods=["POST"])
+@require_permission("users.suspend")
+def suspend_user(user_id):
+    try:
+        user = admin_service.suspend_user(user_id, g.current_user)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "User suspended", "user": user}), 200
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/activate", methods=["POST"])
+@require_permission("users.suspend")
+def activate_user(user_id):
+    try:
+        user = admin_service.activate_user(user_id, g.current_user)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "User activated", "user": user}), 200
+
+
+@admin_bp.route("/api/admin/audit-logs", methods=["GET"])
+@require_permission("audit_logs.view")
+def audit_logs():
+    limit = min(int(request.args.get("limit", 100)), 500)
+    offset = max(int(request.args.get("offset", 0)), 0)
+    admin_only = request.args.get("admin_only") == "true"
+    return jsonify(admin_service.get_audit_log(limit=limit, offset=offset, admin_actions_only=admin_only)), 200
+
+
+@admin_bp.route("/api/admin/security-events", methods=["GET"])
+@require_permission("audit_logs.view")
+def security_events():
+    limit = min(int(request.args.get("limit", 100)), 500)
+    offset = max(int(request.args.get("offset", 0)), 0)
+    return jsonify(admin_service.get_security_events(limit=limit, offset=offset)), 200

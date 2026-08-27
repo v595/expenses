@@ -1,62 +1,43 @@
-from app.database import get_db_connection
+from app.extensions import db
+from app.models.orm import Account
 
 
 def get_accounts_by_user(user_id):
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT * FROM accounts WHERE user_id = ? ORDER BY name", (user_id,)
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    rows = db.session.query(Account).filter_by(user_id=user_id).order_by(Account.name).all()
+    return [a.to_dict() for a in rows]
 
 
 def get_account_by_id(account_id, user_id):
-    conn = get_db_connection()
-    row = conn.execute(
-        "SELECT * FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id)
-    ).fetchone()
-    conn.close()
-    return dict(row) if row else None
+    account = db.session.query(Account).filter_by(id=account_id, user_id=user_id).first()
+    return account.to_dict() if account else None
 
 
 def create_account(user_id, name, type_, balance, color):
-    conn = get_db_connection()
-    row = conn.execute(
-        """
-        INSERT INTO accounts (user_id, name, type, balance, color)
-        VALUES (?, ?, ?, ?, ?)
-        RETURNING *
-        """,
-        (user_id, name, type_, balance, color),
-    ).fetchone()
-    conn.commit()
-    conn.close()
-    return dict(row)
+    account = Account(user_id=user_id, name=name, type=type_, balance=balance, color=color)
+    db.session.add(account)
+    db.session.commit()
+    return account.to_dict()
 
 
 def update_account(account_id, user_id, name, type_, color):
-    conn = get_db_connection()
-    conn.execute(
-        "UPDATE accounts SET name = ?, type = ?, color = ? WHERE id = ? AND user_id = ?",
-        (name, type_, color, account_id, user_id),
-    )
-    conn.commit()
-    row = conn.execute(
-        "SELECT * FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id)
-    ).fetchone()
-    conn.close()
-    return dict(row) if row else None
+    account = db.session.query(Account).filter_by(id=account_id, user_id=user_id).first()
+    if account is None:
+        return None
+    account.name = name
+    account.type = type_
+    account.color = color
+    db.session.commit()
+    return account.to_dict()
 
 
 def adjust_balance(account_id, delta):
-    conn = get_db_connection()
-    conn.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (delta, account_id))
-    conn.commit()
-    conn.close()
+    account = db.session.get(Account, account_id)
+    if account is None:
+        return
+    account.balance = account.balance + delta
+    db.session.commit()
 
 
 def delete_account(account_id, user_id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id))
-    conn.commit()
-    conn.close()
+    db.session.query(Account).filter_by(id=account_id, user_id=user_id).delete()
+    db.session.commit()

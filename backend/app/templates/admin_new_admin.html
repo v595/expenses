@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+{% block title %}Create Admin{% endblock %}
+{% block content %}
+    <a class="clear-link" href="{{ url_for('admin_dashboard.admins') }}">&larr; Back to Admins</a>
+
+    <div class="card" style="margin-top: 1rem; max-width: 480px;">
+      <div class="card-header"><h2>Create Admin Account</h2></div>
+
+      {% if error %}<div class="banner error">{{ error }}</div>{% endif %}
+
+      <form class="form-grid" method="post">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" minlength="6" required />
+        </div>
+        <div>
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="ADMIN">Admin</option>
+            {% if can_create_super_admin %}
+            <option value="SUPER_ADMIN">Super Admin</option>
+            {% endif %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Admin</button>
+      </form>
+    </div>
+{% endblock %}

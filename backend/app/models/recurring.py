@@ -1,54 +1,49 @@
-from app.database import get_db_connection
+from app.extensions import db
+from app.models.orm import RecurringTransaction
 
 
 def get_recurring_by_user(user_id):
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT * FROM recurring_transactions WHERE user_id = ? ORDER BY next_date",
-        (user_id,),
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    rows = (
+        db.session.query(RecurringTransaction)
+        .filter_by(user_id=user_id)
+        .order_by(RecurringTransaction.next_date)
+        .all()
+    )
+    return [r.to_dict() for r in rows]
 
 
 def get_due_recurring(user_id, today):
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT * FROM recurring_transactions WHERE user_id = ? AND next_date <= ?",
-        (user_id, today),
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    rows = (
+        db.session.query(RecurringTransaction)
+        .filter(RecurringTransaction.user_id == user_id, RecurringTransaction.next_date <= today)
+        .all()
+    )
+    return [r.to_dict() for r in rows]
 
 
 def create_recurring(user_id, amount, type_, category, description, frequency, next_date):
-    conn = get_db_connection()
-    row = conn.execute(
-        """
-        INSERT INTO recurring_transactions (user_id, amount, type, category, description, frequency, next_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        RETURNING *
-        """,
-        (user_id, amount, type_, category, description, frequency, next_date),
-    ).fetchone()
-    conn.commit()
-    conn.close()
-    return dict(row)
+    recurring = RecurringTransaction(
+        user_id=user_id,
+        amount=amount,
+        type=type_,
+        category=category,
+        description=description,
+        frequency=frequency,
+        next_date=next_date,
+    )
+    db.session.add(recurring)
+    db.session.commit()
+    return recurring.to_dict()
 
 
 def update_next_date(recurring_id, next_date):
-    conn = get_db_connection()
-    conn.execute(
-        "UPDATE recurring_transactions SET next_date = ? WHERE id = ?", (next_date, recurring_id)
-    )
-    conn.commit()
-    conn.close()
+    recurring = db.session.get(RecurringTransaction, recurring_id)
+    if recurring is None:
+        return
+    recurring.next_date = next_date
+    db.session.commit()
 
 
 def delete_recurring(recurring_id, user_id):
-    conn = get_db_connection()
-    conn.execute(
-        "DELETE FROM recurring_transactions WHERE id = ? AND user_id = ?", (recurring_id, user_id)
-    )
-    conn.commit()
-    conn.close()
+    db.session.query(RecurringTransaction).filter_by(id=recurring_id, user_id=user_id).delete()
+    db.session.commit()

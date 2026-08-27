@@ -1,347 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Dashboard — Expense Tracker</title>
-  <style>
-    :root {
-      --bg: #f6f7fb;
-      --surface: #ffffff;
-      --border: #e7e9f0;
-      --text: #111827;
-      --muted: #6b7280;
-      --muted-soft: #9ca3af;
-      --brand: #4f46e5;
-      --brand-end: #7c3aed;
-      --brand-soft: #eef2ff;
-      --income: #16a34a;
-      --income-soft: #ecfdf5;
-      --expense: #dc2626;
-      --expense-soft: #fef2f2;
-      --amber: #d97706;
-      --amber-soft: #fffbeb;
-      --radius-lg: 16px;
-      --radius-md: 10px;
-      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-      --shadow-hover: 0 8px 20px rgba(16, 24, 40, 0.08);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; }
-
-    /* --- Top bar --- */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.9rem 2rem;
-      background: #0f1117;
-      color: white;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      font-weight: 700;
-      font-size: 1.02rem;
-      letter-spacing: -0.01em;
-    }
-    .brand-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
-      flex-shrink: 0;
-    }
-    .admin-pill {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.2rem 0.5rem;
-      border-radius: 999px;
-      margin-left: 0.3rem;
-      color: rgba(255, 255, 255, 0.75);
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 0.9rem;
-      font-size: 0.85rem;
-    }
-    .header-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.8rem;
-      flex-shrink: 0;
-    }
-    .header-user { display: flex; align-items: center; gap: 0.55rem; color: rgba(255,255,255,0.9); }
-    .logout-link {
-      text-decoration: none;
-      color: rgba(255, 255, 255, 0.65);
-      padding: 0.4rem 0.8rem;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      transition: background 0.15s, color 0.15s;
-      font-weight: 600;
-    }
-    .logout-link:hover { background: rgba(255, 255, 255, 0.08); color: white; }
-
-    main {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 2rem 1.75rem 3.5rem;
-      animation: fade-in 0.25s ease;
-    }
-    @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-    .page-title { font-size: 1.55rem; font-weight: 700; margin: 0 0 0.25rem; letter-spacing: -0.01em; }
-    .page-subtitle { color: var(--muted); font-size: 0.92rem; margin: 0 0 1.75rem; }
-
-    /* --- Stat cards --- */
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.75rem;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem;
-      box-shadow: var(--shadow);
-      display: flex;
-      align-items: flex-start;
-      gap: 0.9rem;
-      transition: box-shadow 0.2s, transform 0.2s;
-    }
-    .stat-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-    .stat-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: white;
-    }
-    .stat-icon.brand { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%); box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3); }
-    .stat-icon.income { background: linear-gradient(135deg, #22c55e 0%, #059669 100%); box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3); }
-    .stat-icon.expense { background: linear-gradient(135deg, #f87171 0%, #dc2626 100%); box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3); }
-    .stat-icon.amber { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 3px 8px rgba(217, 119, 6, 0.3); }
-    .stat-icon.slate { background: linear-gradient(135deg, #64748b 0%, #334155 100%); box-shadow: 0 3px 8px rgba(51, 65, 85, 0.25); }
-    .stat-label { margin: 0 0 0.3rem; font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
-    .stat-value { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
-    .stat-value.income { color: var(--income); }
-    .stat-value.expense { color: var(--expense); }
-
-    /* --- Cards --- */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow);
-    }
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-      flex-wrap: wrap;
-    }
-    .card-header h2 { margin: 0; font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
-    .card-header h2 svg { color: var(--brand); }
-
-    /* --- Search --- */
-    .search-form { position: relative; }
-    .search-form input {
-      padding: 0.5rem 0.8rem 0.5rem 2.1rem;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      font-size: 0.85rem;
-      width: 230px;
-      background: var(--bg);
-    }
-    .search-form input:focus { outline: none; border-color: var(--brand); background: white; box-shadow: 0 0 0 3px var(--brand-soft); }
-    .search-form svg { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted-soft); pointer-events: none; }
-    .clear-link { font-size: 0.8rem; color: var(--muted); text-decoration: none; margin-left: 0.6rem; }
-    .clear-link:hover { color: var(--text); }
-
-    /* --- Two-column split --- */
-    .split-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-      align-items: start;
-    }
-    @media (max-width: 900px) {
-      .split-grid { grid-template-columns: 1fr; }
-    }
-
-    /* --- Activity feed --- */
-    .activity-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      max-height: 360px;
-      overflow-y: auto;
-    }
-    .activity-list li {
-      display: flex;
-      gap: 0.65rem;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.85rem;
-    }
-    .activity-list li:last-child { border-bottom: none; }
-    .activity-avatar {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: var(--brand-soft); color: var(--brand);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.72rem; flex-shrink: 0;
-    }
-    .activity-body { min-width: 0; }
-    .activity-time { color: var(--muted); font-size: 0.76rem; margin-top: 0.1rem; }
-
-    /* --- Signups chart --- */
-    .bar-row { display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; font-size: 0.84rem; }
-    .bar-row:last-child { margin-bottom: 0; }
-    .bar-row .month { color: var(--muted); font-weight: 600; }
-    .bar-track { background: var(--bg); border-radius: 999px; height: 11px; overflow: hidden; }
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--brand) 0%, var(--brand-end) 100%);
-      border-radius: 999px;
-      transition: width 0.5s ease;
-      min-width: 4px;
-    }
-    .bar-row .count { text-align: right; font-weight: 700; }
-    .empty-note { color: var(--muted); font-size: 0.88rem; margin: 0; }
-
-    /* --- Table --- */
-    .table-scroll { overflow-x: auto; margin: 0 -0.25rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; min-width: 760px; }
-    th {
-      text-align: left;
-      padding: 0.7rem 0.9rem;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    th:first-child { border-top-left-radius: var(--radius-md); }
-    th:last-child { border-top-right-radius: var(--radius-md); }
-    td { padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tbody tr { transition: background 0.12s; }
-    tbody tr:hover { background: var(--bg); }
-    tbody tr:last-child td { border-bottom: none; }
-
-    .user-cell { display: flex; align-items: center; gap: 0.65rem; }
-    .avatar-circle {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
-      color: white; display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.78rem; flex-shrink: 0;
-    }
-    .user-name { font-weight: 600; }
-    .user-email { color: var(--muted); font-size: 0.8rem; }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-    }
-    .badge.admin { background: var(--brand-soft); color: var(--brand); }
-    .badge.online { background: var(--income-soft); color: var(--income); }
-    .badge.offline { background: var(--bg); color: var(--muted); }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-    .amount { font-weight: 700; white-space: nowrap; }
-    .amount.income { color: var(--income); }
-    .amount.expense { color: var(--expense); }
-
-    .row-actions { display: flex; align-items: center; gap: 0.25rem; }
-    .delete-form { display: inline; }
-    .icon-btn {
-      border: none;
-      background: transparent;
-      color: var(--muted-soft);
-      cursor: pointer;
-      padding: 0.4rem;
-      border-radius: var(--radius-md);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: background 0.15s, color 0.15s;
-    }
-    .icon-btn:hover { background: var(--expense-soft); color: var(--expense); }
-    .icon-btn-neutral:hover { background: var(--brand-soft); color: var(--brand); }
-
-    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
-    .empty-state svg { color: #d1d5db; margin-bottom: 0.6rem; }
-
-    @media (max-width: 640px) {
-      header { padding: 0.8rem 1.1rem; }
-      main { padding: 1.5rem 1rem 2.5rem; }
-      .header-user span:last-child { display: none; }
-      .search-form input { width: 150px; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="brand">
-      <span class="brand-mark">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-4a2 2 0 0 1 0-4z" /></svg>
-      </span>
-      Expense Tracker <span class="admin-pill">Admin</span>
-    </div>
-    <div class="header-right">
-      <div class="header-user">
-        <span class="header-avatar">{{ admin_avatar }}</span>
-        <span>{{ admin_name }}</span>
-      </div>
-      <a class="logout-link" href="{{ url_for('admin_dashboard.logout') }}">Log out</a>
-    </div>
-  </header>
-
-  <main>
+{% extends "admin_base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
     <h1 class="page-title">Dashboard Overview</h1>
     <p class="page-subtitle">Live metrics across every account — rendered directly by the backend.</p>
 
@@ -484,7 +143,7 @@
                 <div class="user-cell">
                   <span class="avatar-circle">{{ u.name[:1]|upper }}</span>
                   <div>
-                    <div class="user-name">{{ u.name }} {% if u.is_admin %}<span class="badge admin">Admin</span>{% endif %}</div>
+                    <div class="user-name">{{ u.name }} {% if u.is_admin %}<span class="badge admin">{{ u.role_name or "Admin" }}</span>{% endif %}</div>
                     <div class="user-email">{{ u.email }}</div>
                   </div>
                 </div>
@@ -492,10 +151,14 @@
               <td>{{ u.created_at[:10] }}</td>
               <td>{{ u.last_login_label }}</td>
               <td>
+                {% if u.is_suspended %}
+                <span class="badge suspended"><span class="status-dot"></span>Suspended</span>
+                {% else %}
                 <span class="badge {{ 'online' if u.is_logged_in else 'offline' }}">
                   <span class="status-dot"></span>
                   {{ "Online" if u.is_logged_in else "Offline" }}
                 </span>
+                {% endif %}
               </td>
               <td>{{ u.transaction_count }}</td>
               <td class="amount income">{{ "{:,.2f}".format(u.income) }}</td>
@@ -506,7 +169,20 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </a>
                   {% if u.id != current_admin_id %}
-                  <form class="delete-form" method="post" action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete this user and all of their data?');">
+                  {% if u.is_suspended %}
+                  <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.activate_user', user_id=u.id) }}">
+                    <button type="submit" class="icon-btn icon-btn-neutral" title="Reactivate user">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </button>
+                  </form>
+                  {% else %}
+                  <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.suspend_user', user_id=u.id) }}" onsubmit="return confirm('Suspend this user? They will be logged out immediately.');">
+                    <button type="submit" class="icon-btn" title="Suspend user">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    </button>
+                  </form>
+                  {% endif %}
+                  <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete this user and all of their data?');">
                     <button type="submit" class="icon-btn" title="Delete user">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
@@ -526,6 +202,4 @@
       </div>
       {% endif %}
     </div>
-  </main>
-</body>
-</html>
+{% endblock %}

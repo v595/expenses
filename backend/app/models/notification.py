@@ -1,69 +1,47 @@
-from app.database import get_db_connection
+from app.extensions import db
+from app.models.orm import Notification, now_iso
 
 
 def get_notifications_by_user(user_id, limit=50):
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
-        (user_id, limit),
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    rows = (
+        db.session.query(Notification)
+        .filter_by(user_id=user_id)
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [n.to_dict() for n in rows]
 
 
 def get_unread_count(user_id):
-    conn = get_db_connection()
-    row = conn.execute(
-        "SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND is_read = 0",
-        (user_id,),
-    ).fetchone()
-    conn.close()
-    return row["count"]
+    return db.session.query(Notification).filter_by(user_id=user_id, is_read=False).count()
 
 
 def exists_by_ref(user_id, ref_key):
-    conn = get_db_connection()
-    row = conn.execute(
-        "SELECT id FROM notifications WHERE user_id = ? AND ref_key = ?", (user_id, ref_key)
-    ).fetchone()
-    conn.close()
-    return row is not None
+    return db.session.query(Notification).filter_by(user_id=user_id, ref_key=ref_key).first() is not None
 
 
 def create_notification(user_id, type_, title, message, ref_key):
-    conn = get_db_connection()
-    conn.execute(
-        """
-        INSERT INTO notifications (user_id, type, title, message, ref_key)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (user_id, type_, title, message, ref_key),
+    notification = Notification(
+        user_id=user_id, type=type_, title=title, message=message, ref_key=ref_key, created_at=now_iso()
     )
-    conn.commit()
-    conn.close()
+    db.session.add(notification)
+    db.session.commit()
 
 
 def mark_read(notification_id, user_id):
-    conn = get_db_connection()
-    conn.execute(
-        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
-        (notification_id, user_id),
-    )
-    conn.commit()
-    conn.close()
+    notification = db.session.query(Notification).filter_by(id=notification_id, user_id=user_id).first()
+    if notification is None:
+        return
+    notification.is_read = True
+    db.session.commit()
 
 
 def mark_all_read(user_id):
-    conn = get_db_connection()
-    conn.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ?", (user_id,))
-    conn.commit()
-    conn.close()
+    db.session.query(Notification).filter_by(user_id=user_id).update({"is_read": True})
+    db.session.commit()
 
 
 def delete_notification(notification_id, user_id):
-    conn = get_db_connection()
-    conn.execute(
-        "DELETE FROM notifications WHERE id = ? AND user_id = ?", (notification_id, user_id)
-    )
-    conn.commit()
-    conn.close()
+    db.session.query(Notification).filter_by(id=notification_id, user_id=user_id).delete()
+    db.session.commit()

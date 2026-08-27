@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Dashboard{% endblock %} — Expense Tracker Admin</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --border: #e7e9f0;
+      --text: #111827;
+      --muted: #6b7280;
+      --muted-soft: #9ca3af;
+      --brand: #4f46e5;
+      --brand-end: #7c3aed;
+      --brand-soft: #eef2ff;
+      --income: #16a34a;
+      --income-soft: #ecfdf5;
+      --expense: #dc2626;
+      --expense-soft: #fef2f2;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+      --shadow-hover: 0 8px 20px rgba(16, 24, 40, 0.08);
+      --sidebar-w: 240px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+
+    .app-shell { display: flex; min-height: 100vh; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: #0f1117;
+      color: rgba(255, 255, 255, 0.85);
+      padding: 1.1rem 0.9rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar .brand {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-weight: 700; font-size: 0.95rem; color: white;
+      padding: 0.3rem 0.5rem 1.1rem;
+    }
+    .brand-mark {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4); flex-shrink: 0;
+    }
+    .nav-section { margin-bottom: 1.1rem; }
+    .nav-section-label {
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.35);
+      padding: 0.3rem 0.6rem;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.6rem; border-radius: var(--radius-md);
+      font-size: 0.86rem; font-weight: 600; text-decoration: none;
+      color: rgba(255, 255, 255, 0.65);
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: rgba(255, 255, 255, 0.06); color: white; }
+    .nav-link.active { background: rgba(99, 102, 241, 0.25); color: white; }
+    .nav-link svg { flex-shrink: 0; }
+
+    /* --- Top bar --- */
+    .main-col { flex: 1; min-width: 0; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 2rem;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-right { display: flex; align-items: center; gap: 0.9rem; font-size: 0.85rem; }
+    .header-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%);
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
+    }
+    .header-user { display: flex; align-items: center; gap: 0.55rem; color: var(--text); }
+    .role-pill {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      background: var(--brand-soft); color: var(--brand); padding: 0.15rem 0.45rem; border-radius: 999px;
+    }
+    .logout-link {
+      text-decoration: none; color: var(--muted); padding: 0.4rem 0.8rem;
+      border-radius: var(--radius-md); border: 1px solid var(--border);
+      transition: background 0.15s, color 0.15s; font-weight: 600;
+    }
+    .logout-link:hover { background: var(--bg); color: var(--text); }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2rem 1.75rem 3.5rem;
+      animation: fade-in 0.25s ease;
+    }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .page-title { font-size: 1.55rem; font-weight: 700; margin: 0 0 0.25rem; letter-spacing: -0.01em; }
+    .page-subtitle { color: var(--muted); font-size: 0.92rem; margin: 0 0 1.75rem; }
+
+    /* --- Stat cards --- */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.25rem; box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 0.9rem;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .stat-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    .stat-icon { width: 42px; height: 42px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; }
+    .stat-icon.brand { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%); box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3); }
+    .stat-icon.income { background: linear-gradient(135deg, #22c55e 0%, #059669 100%); box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3); }
+    .stat-icon.expense { background: linear-gradient(135deg, #f87171 0%, #dc2626 100%); box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3); }
+    .stat-icon.amber { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 3px 8px rgba(217, 119, 6, 0.3); }
+    .stat-icon.slate { background: linear-gradient(135deg, #64748b 0%, #334155 100%); box-shadow: 0 3px 8px rgba(51, 65, 85, 0.25); }
+    .stat-label { margin: 0 0 0.3rem; font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+    .stat-value { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+    .stat-value.income { color: var(--income); }
+    .stat-value.expense { color: var(--expense); }
+    .stat-value.healthy { color: var(--income); }
+    .stat-value.critical { color: var(--expense); }
+
+    /* --- Cards --- */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .card-header h2 { margin: 0; font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+    .card-header h2 svg { color: var(--brand); }
+
+    /* --- Search --- */
+    .search-form { position: relative; }
+    .search-form input { padding: 0.5rem 0.8rem 0.5rem 2.1rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.85rem; width: 230px; background: var(--bg); }
+    .search-form input:focus { outline: none; border-color: var(--brand); background: white; box-shadow: 0 0 0 3px var(--brand-soft); }
+    .search-form svg { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted-soft); pointer-events: none; }
+    .clear-link { font-size: 0.8rem; color: var(--muted); text-decoration: none; margin-left: 0.6rem; }
+    .clear-link:hover { color: var(--text); }
+
+    .split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+    @media (max-width: 900px) { .split-grid { grid-template-columns: 1fr; } }
+
+    .activity-list { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+    .activity-list li { display: flex; gap: 0.65rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .activity-list li:last-child { border-bottom: none; }
+    .activity-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.72rem; flex-shrink: 0; }
+    .activity-body { min-width: 0; }
+    .activity-time { color: var(--muted); font-size: 0.76rem; margin-top: 0.1rem; }
+
+    .bar-row { display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; font-size: 0.84rem; }
+    .bar-row:last-child { margin-bottom: 0; }
+    .bar-row .month { color: var(--muted); font-weight: 600; }
+    .bar-track { background: var(--bg); border-radius: 999px; height: 11px; overflow: hidden; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand) 0%, var(--brand-end) 100%); border-radius: 999px; transition: width 0.5s ease; min-width: 4px; }
+    .bar-row .count { text-align: right; font-weight: 700; }
+    .empty-note { color: var(--muted); font-size: 0.88rem; margin: 0; }
+
+    .table-scroll { overflow-x: auto; margin: 0 -0.25rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; min-width: 640px; }
+    th { text-align: left; padding: 0.7rem 0.9rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th:first-child { border-top-left-radius: var(--radius-md); }
+    th:last-child { border-top-right-radius: var(--radius-md); }
+    td { padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr { transition: background 0.12s; }
+    tbody tr:hover { background: var(--bg); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .user-cell { display: flex; align-items: center; gap: 0.65rem; }
+    .avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
+    .user-name { font-weight: 600; }
+    .user-email { color: var(--muted); font-size: 0.8rem; }
+
+    .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .badge.admin { background: var(--brand-soft); color: var(--brand); }
+    .badge.online { background: var(--income-soft); color: var(--income); }
+    .badge.offline { background: var(--bg); color: var(--muted); }
+    .badge.suspended { background: var(--expense-soft); color: var(--expense); }
+    .badge.healthy { background: var(--income-soft); color: var(--income); }
+    .badge.critical { background: var(--expense-soft); color: var(--expense); }
+    .badge.warning { background: var(--amber-soft); color: var(--amber); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .amount { font-weight: 700; white-space: nowrap; }
+    .amount.income { color: var(--income); }
+    .amount.expense { color: var(--expense); }
+
+    .row-actions { display: flex; align-items: center; gap: 0.25rem; }
+    .inline-form { display: inline; }
+    .icon-btn { border: none; background: transparent; color: var(--muted-soft); cursor: pointer; padding: 0.4rem; border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s, color 0.15s; }
+    .icon-btn:hover { background: var(--expense-soft); color: var(--expense); }
+    .icon-btn-neutral:hover { background: var(--brand-soft); color: var(--brand); }
+
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+    .empty-state svg { color: #d1d5db; margin-bottom: 0.6rem; }
+
+    /* --- Forms --- */
+    .form-grid { display: grid; gap: 1rem; max-width: 420px; }
+    .form-grid label { font-size: 0.8rem; font-weight: 600; color: #374151; }
+    .form-grid input, .form-grid select { padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.9rem; font-family: inherit; background: var(--bg); }
+    .form-grid input:focus, .form-grid select:focus { outline: none; border-color: var(--brand); background: white; box-shadow: 0 0 0 3px var(--brand-soft); }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: var(--radius-md); border: none; font-weight: 700; font-size: 0.87rem; cursor: pointer; text-decoration: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-end) 100%); color: white; box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .toggle-form { display: inline-flex; }
+    .toggle-switch { width: 38px; height: 22px; border-radius: 999px; border: none; cursor: pointer; position: relative; background: var(--border); transition: background 0.15s; }
+    .toggle-switch.on { background: var(--income); }
+    .toggle-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.15s; }
+    .toggle-switch.on::after { transform: translateX(16px); }
+    .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; }
+    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.35rem 0; }
+    .banner { padding: 0.8rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1.25rem; }
+    .banner.success { background: var(--income-soft); color: var(--income); }
+    .banner.error { background: var(--expense-soft); color: var(--expense); }
+    .banner.warning { background: var(--amber-soft); color: var(--amber); }
+
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: -260px; z-index: 20; transition: left 0.2s; }
+      .sidebar.open { left: 0; }
+    }
+    @media (max-width: 640px) {
+      header { padding: 0.8rem 1.1rem; }
+      main { padding: 1.5rem 1rem 2.5rem; }
+      .header-user span:last-child { display: none; }
+      .search-form input { width: 150px; }
+    }
+  </style>
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-4a2 2 0 0 1 0-4z" /></svg>
+        </span>
+        Expense Tracker
+      </div>
+      {% for section in nav_sections %}
+      <div class="nav-section">
+        <div class="nav-section-label">{{ section.label }}</div>
+        {% for item in section.links %}
+        <a class="nav-link {{ 'active' if item.key == active_nav else '' }}" href="{{ item.url }}">{{ item.title }}</a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </aside>
+
+    <div class="main-col">
+      <header>
+        <div></div>
+        <div class="header-right">
+          <div class="header-user">
+            <span class="header-avatar">{{ admin_avatar }}</span>
+            <span>{{ admin_name }}</span>
+            <span class="role-pill">{{ admin_role }}</span>
+          </div>
+          <a class="logout-link" href="{{ url_for('admin_dashboard.logout') }}">Log out</a>
+        </div>
+      </header>
+      <main>
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>
