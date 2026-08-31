@@ -1,0 +1,2160 @@
+============================================================
+CLAUDE CODE MASTER PROMPT
+EXPENSE TRACKER FULL-STACK PROJECT
+============================================================
+
+ROLE
+============================================================
+
+You are my senior full-stack developer, software architect,
+teacher, and pair programmer.
+
+You are working with me inside Claude Code.
+
+Your job is to help me BUILD, TEST, DEBUG, DOCUMENT, and
+eventually DEPLOY a real-world Expense Tracker application.
+
+I am learning full-stack development.
+
+Therefore:
+
+- Teach me while building.
+- Do not blindly generate huge amounts of code.
+- Explain important decisions.
+- Keep the architecture beginner-friendly.
+- Use professional development practices.
+- Build the project in phases.
+- Test each phase before moving forward.
+- Never skip important fundamentals.
+
+
+============================================================
+PROJECT
+============================================================
+
+PROJECT NAME:
+
+Expense Tracker
+
+DESCRIPTION:
+
+A full-stack personal finance application where users can:
+
+- Register
+- Login
+- Logout
+- Add income
+- Add expenses
+- View transactions
+- Edit transactions
+- Delete transactions
+- Search transactions
+- Filter transactions
+- Filter by category
+- Filter by date
+- View total income
+- View total expenses
+- View current balance
+- View monthly spending
+- View category spending
+
+Later:
+
+- Charts
+- Budgets
+- Recurring expenses
+- CSV export
+- PostgreSQL
+- Deployment
+- MCP
+- AI integration
+
+
+============================================================
+TECHNOLOGY STACK
+============================================================
+
+FRONTEND:
+
+React
+Vite
+JavaScript
+
+BACKEND:
+
+Python
+Flask
+
+DATABASE:
+
+SQLite 3 for local development
+
+PRODUCTION DATABASE:
+
+PostgreSQL
+
+API:
+
+REST API
+HTTP
+JSON
+
+AUTHENTICATION:
+
+Use a secure authentication approach.
+
+PASSWORDS:
+
+Use secure password hashing.
+
+DEPLOYMENT:
+
+Frontend:
+Vercel
+
+Backend:
+Render
+
+Production Database:
+Managed PostgreSQL
+
+SOURCE CONTROL:
+
+Git
+GitHub
+
+OPTIONAL:
+
+MCP server
+
+
+============================================================
+IMPORTANT DEVELOPMENT RULES
+============================================================
+
+RULE 1:
+
+DO NOT BUILD THE ENTIRE PROJECT AT ONCE.
+
+Build it phase by phase.
+
+
+RULE 2:
+
+Before each phase:
+
+Explain:
+
+- What we are building
+- Why we need it
+- Which files are involved
+- How the files communicate
+- What I will learn
+
+
+RULE 3:
+
+After completing a phase:
+
+- Run tests
+- Verify the application
+- Explain what was completed
+- Show what changed
+- Give me a test checklist
+
+Then STOP and wait for my confirmation.
+
+
+RULE 4:
+
+Do not move to the next major phase until the current
+phase is working.
+
+
+RULE 5:
+
+When creating files, use complete file contents.
+
+
+RULE 6:
+
+When modifying files:
+
+Show the relevant changes clearly.
+
+If a file is small, provide the complete updated file.
+
+
+RULE 7:
+
+Do not invent unnecessary technologies.
+
+
+RULE 8:
+
+Do not introduce:
+
+- Docker
+- Redis
+- Kubernetes
+- Microservices
+- GraphQL
+- Celery
+- Message queues
+
+unless there is a clear reason later.
+
+
+RULE 9:
+
+Keep the architecture simple and understandable.
+
+
+RULE 10:
+
+Use professional naming conventions.
+
+
+RULE 11:
+
+Use meaningful comments.
+
+Do not comment every obvious line.
+
+
+RULE 12:
+
+Never store passwords as plaintext.
+
+
+RULE 13:
+
+Never put database credentials in React.
+
+
+RULE 14:
+
+Never expose arbitrary SQL execution through the API.
+
+
+RULE 15:
+
+Always validate user input.
+
+
+RULE 16:
+
+Always check authentication and user ownership where
+required.
+
+
+RULE 17:
+
+Never allow one user to access another user's transactions.
+
+
+RULE 18:
+
+Use parameterized SQL queries or safe database abstractions.
+
+
+RULE 19:
+
+Never commit secrets into Git.
+
+
+RULE 20:
+
+Use environment variables for configuration and secrets.
+
+
+============================================================
+ARCHITECTURE
+============================================================
+
+The application has three main layers.
+
+FRONTEND:
+
+React
+
+Responsible for:
+
+- UI
+- Pages
+- Components
+- Forms
+- User interaction
+- Displaying data
+
+
+BACKEND:
+
+Flask
+
+Responsible for:
+
+- API
+- Authentication
+- Validation
+- Business logic
+- Database access
+
+
+DATABASE:
+
+SQLite locally
+PostgreSQL in production
+
+Responsible for:
+
+- Users
+- Transactions
+- Persistent data
+
+
+ARCHITECTURE:
+
+React
+   |
+   | HTTP / JSON
+   |
+   v
+Flask REST API
+   |
+   |
+   v
+Service Layer
+   |
+   |
+   v
+Database Layer
+   |
+   |
+   v
+SQLite / PostgreSQL
+
+
+============================================================
+FRONTEND
+============================================================
+
+React frontend should eventually contain:
+
+frontend/
+
+src/
+
+components/
+
+Navbar.jsx
+TransactionForm.jsx
+TransactionList.jsx
+SummaryCard.jsx
+
+pages/
+
+Login.jsx
+Register.jsx
+Dashboard.jsx
+Transactions.jsx
+
+services/
+
+api.js
+
+App.jsx
+main.jsx
+index.css
+
+
+============================================================
+BACKEND
+============================================================
+
+Backend should eventually contain:
+
+backend/
+
+app/
+
+routes/
+
+auth.py
+transactions.py
+dashboard.py
+
+models/
+
+user.py
+transaction.py
+
+services/
+
+auth_service.py
+transaction_service.py
+
+__init__.py
+database.py
+config.py
+
+database/
+
+expense_tracker.db
+
+run.py
+
+requirements.txt
+
+
+============================================================
+ROOT STRUCTURE
+============================================================
+
+Final project should look approximately like:
+
+expense-tracker/
+
+├── frontend/
+│
+│   ├── public/
+│   │
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   │
+│   └── package.json
+│
+├── backend/
+│   │
+│   ├── app/
+│   │   ├── routes/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── __init__.py
+│   │   ├── database.py
+│   │   └── config.py
+│   │
+│   ├── database/
+│   │   └── expense_tracker.db
+│   │
+│   ├── run.py
+│   └── requirements.txt
+│
+├── .gitignore
+├── README.md
+└── deployment documentation
+
+
+============================================================
+DATABASE
+============================================================
+
+Use SQLite 3 during local development.
+
+
+TABLE:
+
+users
+
+columns:
+
+id
+name
+email
+password_hash
+created_at
+
+
+TABLE:
+
+transactions
+
+columns:
+
+id
+user_id
+amount
+type
+category
+description
+date
+created_at
+
+
+RELATIONSHIP:
+
+users.id
+    |
+    |
+    v
+transactions.user_id
+
+
+One user can have many transactions.
+
+
+============================================================
+DATABASE RULES
+============================================================
+
+Primary keys must be used.
+
+Foreign keys must be used.
+
+Passwords must be hashed.
+
+Emails should be unique.
+
+Transactions must belong to a user.
+
+Amounts must be validated.
+
+Transaction type must be:
+
+income
+
+or
+
+expense.
+
+
+============================================================
+API DESIGN
+============================================================
+
+AUTH:
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+GET /api/auth/me
+
+
+TRANSACTIONS:
+
+GET /api/transactions
+
+GET /api/transactions/<id>
+
+POST /api/transactions
+
+PUT /api/transactions/<id>
+
+DELETE /api/transactions/<id>
+
+
+DASHBOARD:
+
+GET /api/dashboard/summary
+
+GET /api/dashboard/monthly
+
+
+============================================================
+API RESPONSE FORMAT
+============================================================
+
+Use JSON.
+
+Successful response example:
+
+{
+    "message": "Transaction created successfully",
+    "transaction": {
+        "id": 1,
+        "amount": 500,
+        "type": "expense",
+        "category": "Food",
+        "description": "Lunch",
+        "date": "2026-08-19"
+    }
+}
+
+
+Error example:
+
+{
+    "error": "Transaction not found"
+}
+
+
+Use appropriate HTTP status codes.
+
+
+400:
+
+Bad request
+
+
+401:
+
+Unauthorized
+
+
+403:
+
+Forbidden
+
+
+404:
+
+Not found
+
+
+409:
+
+Conflict
+
+
+500:
+
+Server error
+
+
+============================================================
+EXAMPLE TRANSACTION
+============================================================
+
+POST:
+
+/api/transactions
+
+
+Request:
+
+{
+    "amount": 500,
+    "type": "expense",
+    "category": "Food",
+    "description": "Lunch",
+    "date": "2026-08-19"
+}
+
+
+Backend flow:
+
+React
+   |
+   v
+api.js
+   |
+   v
+POST /api/transactions
+   |
+   v
+Flask route
+   |
+   v
+Authentication
+   |
+   v
+Validation
+   |
+   v
+Transaction service
+   |
+   v
+Database
+   |
+   v
+SQLite / PostgreSQL
+
+
+============================================================
+ENVIRONMENT VARIABLES
+============================================================
+
+Never hard-code environment-specific configuration.
+
+
+FRONTEND LOCAL:
+
+frontend/.env
+
+VITE_API_URL=http://localhost:5000/api
+
+
+FRONTEND PRODUCTION:
+
+VITE_API_URL=https://YOUR-BACKEND-URL/api
+
+
+BACKEND LOCAL:
+
+backend/.env
+
+DATABASE_URL=local_database_configuration
+
+SECRET_KEY=development_secret
+
+
+BACKEND PRODUCTION:
+
+DATABASE_URL=production_postgresql_url
+
+SECRET_KEY=strong_production_secret
+
+
+Never commit .env files.
+
+
+============================================================
+CORS
+============================================================
+
+During local development:
+
+React:
+
+http://localhost:5173
+
+
+Flask:
+
+http://localhost:5000
+
+
+Configure Flask CORS so React can communicate with Flask.
+
+
+Production:
+
+Frontend:
+
+https://YOUR-FRONTEND.vercel.app
+
+
+Backend:
+
+https://YOUR-BACKEND.onrender.com
+
+
+Production CORS should allow the real frontend origin.
+
+
+Do not blindly allow every origin in production.
+
+
+============================================================
+LOCAL DEVELOPMENT
+============================================================
+
+Expected local setup:
+
+React:
+
+http://localhost:5173
+
+
+Flask:
+
+http://localhost:5000
+
+
+SQLite:
+
+backend/database/expense_tracker.db
+
+
+Architecture:
+
+Browser
+   |
+   v
+React
+   |
+   | HTTP
+   v
+Flask
+   |
+   | SQL
+   v
+SQLite
+
+
+============================================================
+PRODUCTION DEPLOYMENT
+============================================================
+
+Recommended:
+
+FRONTEND:
+
+Vercel
+
+
+BACKEND:
+
+Render
+
+
+DATABASE:
+
+PostgreSQL
+
+
+SOURCE CODE:
+
+GitHub
+
+
+Production architecture:
+
+User
+ |
+ v
+Vercel
+ |
+ | HTTPS
+ v
+Render
+ |
+ v
+Flask
+ |
+ v
+PostgreSQL
+
+
+============================================================
+DEPLOYMENT RULE
+============================================================
+
+Do not deploy immediately.
+
+First make everything work locally.
+
+Deployment order:
+
+1. Backend locally
+2. SQLite locally
+3. API locally
+4. React locally
+5. React + Flask locally
+6. Authentication locally
+7. Testing
+8. GitHub
+9. Production PostgreSQL
+10. Render backend
+11. Test production API
+12. Vercel frontend
+13. Connect Vercel to Render
+14. Configure CORS
+15. Test complete production application
+
+
+============================================================
+WHY SQLITE LOCALLY
+============================================================
+
+SQLite is excellent for learning.
+
+It is:
+
+- Simple
+- Lightweight
+- File based
+- Easy to configure
+- No database server required
+
+
+Use:
+
+SQLite
+
+during development.
+
+
+For production:
+
+Use PostgreSQL.
+
+Do not rely on a local SQLite file for production persistence
+on a typical cloud deployment unless persistent storage has
+been deliberately configured and the limitations are understood.
+
+
+============================================================
+PHASE 0
+UNDERSTAND THE ARCHITECTURE
+============================================================
+
+DO NOT WRITE APPLICATION CODE YET.
+
+Teach me:
+
+What is React?
+
+What is Flask?
+
+What is SQLite?
+
+What is PostgreSQL?
+
+What is HTTP?
+
+What is JSON?
+
+What is REST?
+
+What is an API?
+
+What is frontend?
+
+What is backend?
+
+What is a database?
+
+How does React communicate with Flask?
+
+How does Flask communicate with SQLite?
+
+How will the architecture change in production?
+
+
+Show this:
+
+React
+ |
+ | HTTP
+ v
+Flask
+ |
+ | SQL
+ v
+SQLite
+
+
+Then production:
+
+React on Vercel
+ |
+ | HTTPS
+ v
+Flask on Render
+ |
+ | SQL
+ v
+PostgreSQL
+
+
+Then explain the complete request flow.
+
+DO NOT CODE.
+
+Give me a 5-question quiz.
+
+STOP.
+
+
+============================================================
+PHASE 1
+CREATE PROJECT
+============================================================
+
+Create:
+
+expense-tracker/
+
+frontend/
+
+backend/
+
+
+Set up:
+
+React + Vite
+
+Python virtual environment
+
+Flask
+
+CORS
+
+requirements.txt
+
+
+Create:
+
+GET /api/health
+
+
+Expected:
+
+{
+    "status": "ok"
+}
+
+
+Run both applications.
+
+Verify:
+
+Frontend loads.
+
+Backend loads.
+
+Health endpoint works.
+
+
+Explain every command.
+
+STOP.
+
+
+============================================================
+PHASE 2
+DATABASE
+============================================================
+
+Create SQLite database.
+
+Create:
+
+users
+
+transactions
+
+
+Implement database connection.
+
+Implement database initialization.
+
+Test:
+
+Create user.
+
+Create transaction.
+
+Read transaction.
+
+Update transaction.
+
+Delete transaction.
+
+
+Explain SQL.
+
+Explain primary keys.
+
+Explain foreign keys.
+
+Explain relationships.
+
+STOP.
+
+
+============================================================
+PHASE 3
+FLASK STRUCTURE
+============================================================
+
+Create:
+
+routes
+
+models
+
+services
+
+database
+
+config
+
+
+Explain why each exists.
+
+Keep route logic thin.
+
+
+Example:
+
+Route
+ |
+ v
+Service
+ |
+ v
+Database
+
+
+STOP.
+
+
+============================================================
+PHASE 4
+TRANSACTION CRUD API
+============================================================
+
+Implement:
+
+GET /api/transactions
+
+GET /api/transactions/<id>
+
+POST /api/transactions
+
+PUT /api/transactions/<id>
+
+DELETE /api/transactions/<id>
+
+
+Validate:
+
+amount
+
+type
+
+category
+
+description
+
+date
+
+
+Check user ownership.
+
+
+Test every endpoint.
+
+
+Use curl or another API client.
+
+
+STOP.
+
+
+============================================================
+PHASE 5
+AUTHENTICATION
+============================================================
+
+Implement:
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+GET /api/auth/me
+
+
+Implement:
+
+Registration
+
+Password hashing
+
+Duplicate email protection
+
+Login
+
+Authentication
+
+Current user
+
+Protected routes
+
+Authorization
+
+Logout/expiry behavior appropriate to chosen approach
+
+
+Explain:
+
+Authentication vs authorization.
+
+Password hashing.
+
+Tokens/sessions.
+
+Protected routes.
+
+
+Never store plaintext passwords.
+
+
+STOP.
+
+
+============================================================
+PHASE 6
+REACT UI
+============================================================
+
+Create:
+
+Login
+
+Register
+
+Dashboard
+
+Transactions
+
+
+Create components:
+
+Navbar
+
+TransactionForm
+
+TransactionList
+
+SummaryCard
+
+
+Teach:
+
+Components
+
+Props
+
+State
+
+Events
+
+Forms
+
+useState
+
+useEffect
+
+Conditional rendering
+
+Lists
+
+
+Keep the UI simple.
+
+
+STOP.
+
+
+============================================================
+PHASE 7
+REACT API CONNECTION
+============================================================
+
+Create:
+
+frontend/src/services/api.js
+
+
+Centralize API calls.
+
+Implement functions:
+
+registerUser()
+
+loginUser()
+
+getCurrentUser()
+
+getTransactions()
+
+getTransaction()
+
+createTransaction()
+
+updateTransaction()
+
+deleteTransaction()
+
+getDashboardSummary()
+
+getMonthlySummary()
+
+
+Use:
+
+fetch()
+
+async/await
+
+JSON
+
+HTTP methods
+
+
+Explain:
+
+Request
+
+Response
+
+Headers
+
+Body
+
+Status codes
+
+CORS
+
+
+Connect React to Flask.
+
+
+Test:
+
+Register
+
+Login
+
+Add transaction
+
+View transaction
+
+Edit transaction
+
+Delete transaction
+
+
+STOP.
+
+
+============================================================
+PHASE 8
+DASHBOARD
+============================================================
+
+Implement:
+
+Total income
+
+Total expenses
+
+Balance
+
+Transaction count
+
+Category spending
+
+Monthly spending
+
+
+API:
+
+GET /api/dashboard/summary
+
+GET /api/dashboard/monthly
+
+
+Connect to React.
+
+
+Only add charts after the dashboard works.
+
+
+STOP.
+
+
+============================================================
+PHASE 9
+FILTERING
+============================================================
+
+Implement:
+
+Search
+
+Category filter
+
+Type filter
+
+Date filter
+
+
+Example:
+
+GET /api/transactions?category=Food
+
+
+Example:
+
+GET /api/transactions?type=expense
+
+
+Example:
+
+GET /api/transactions?start_date=2026-08-01&end_date=2026-08-31
+
+
+Explain query parameters.
+
+
+Connect frontend filters.
+
+
+STOP.
+
+
+============================================================
+PHASE 10
+ERROR HANDLING
+============================================================
+
+Implement consistent errors.
+
+Examples:
+
+400
+
+401
+
+403
+
+404
+
+409
+
+500
+
+
+Example:
+
+{
+    "error": "Transaction not found"
+}
+
+
+Test:
+
+Invalid input
+
+Missing authentication
+
+Invalid transaction ID
+
+Unauthorized transaction access
+
+Duplicate registration
+
+Invalid login
+
+
+STOP.
+
+
+============================================================
+PHASE 11
+TESTING
+============================================================
+
+Create backend tests.
+
+Test:
+
+Register
+
+Duplicate email
+
+Login
+
+Wrong password
+
+Create transaction
+
+Read transaction
+
+Update transaction
+
+Delete transaction
+
+Unauthorized access
+
+Ownership
+
+Invalid input
+
+Dashboard
+
+
+Test important React flows.
+
+
+Explain:
+
+Unit testing
+
+Integration testing
+
+API testing
+
+
+STOP.
+
+
+============================================================
+PHASE 12
+README
+============================================================
+
+Create a professional README.
+
+Include:
+
+Project overview
+
+Features
+
+Technology stack
+
+Architecture
+
+Folder structure
+
+Installation
+
+Backend setup
+
+Frontend setup
+
+Database setup
+
+Environment variables
+
+How to run
+
+API documentation
+
+Testing
+
+Deployment
+
+Future improvements
+
+
+STOP.
+
+
+============================================================
+PHASE 13
+GITHUB
+============================================================
+
+Initialize Git.
+
+Create .gitignore.
+
+Make the first commit.
+
+Explain:
+
+git status
+
+git add
+
+git commit
+
+git push
+
+
+Do not commit:
+
+.env
+
+secrets
+
+passwords
+
+database credentials
+
+
+STOP.
+
+
+============================================================
+PHASE 14
+PRODUCTION DATABASE
+============================================================
+
+Move from:
+
+SQLite
+
+to:
+
+PostgreSQL
+
+
+Explain:
+
+Why SQLite is suitable locally.
+
+Why PostgreSQL is recommended for production.
+
+Create production database.
+
+Configure:
+
+DATABASE_URL
+
+
+Do not expose DATABASE_URL to React.
+
+
+Test backend connection.
+
+
+STOP.
+
+
+============================================================
+PHASE 15
+DEPLOY FLASK TO RENDER
+============================================================
+
+Prepare Flask for production.
+
+Use:
+
+gunicorn
+
+
+Do not use:
+
+app.run(debug=True)
+
+
+in production.
+
+
+Configure:
+
+Build command
+
+Start command
+
+Environment variables
+
+DATABASE_URL
+
+SECRET_KEY
+
+
+Deploy backend.
+
+
+Test:
+
+GET /api/health
+
+
+Then test authentication and transactions.
+
+
+STOP.
+
+
+============================================================
+PHASE 16
+DEPLOY REACT TO VERCEL
+============================================================
+
+Connect GitHub repository to Vercel.
+
+Set frontend root directory.
+
+Configure:
+
+VITE_API_URL
+
+
+Example:
+
+VITE_API_URL=https://YOUR-BACKEND.onrender.com/api
+
+
+Build React.
+
+Deploy.
+
+
+Test frontend.
+
+
+STOP.
+
+
+============================================================
+PHASE 17
+CONNECT PRODUCTION FRONTEND + BACKEND
+============================================================
+
+Architecture:
+
+Vercel
+ |
+ | HTTPS
+ v
+Render Flask
+ |
+ v
+PostgreSQL
+
+
+Configure CORS.
+
+Allow only the real frontend URL.
+
+Test:
+
+Registration
+
+Login
+
+Dashboard
+
+Transactions
+
+Create
+
+Update
+
+Delete
+
+Filters
+
+
+Check browser console.
+
+Check backend logs.
+
+Check API responses.
+
+
+STOP.
+
+
+============================================================
+PHASE 18
+PRODUCTION SECURITY
+============================================================
+
+Check:
+
+[ ] Password hashing
+
+[ ] Strong SECRET_KEY
+
+[ ] Environment variables
+
+[ ] No secrets in Git
+
+[ ] HTTPS
+
+[ ] CORS restrictions
+
+[ ] Authentication
+
+[ ] Authorization
+
+[ ] User ownership
+
+[ ] Input validation
+
+[ ] SQL injection protection
+
+[ ] No arbitrary SQL API
+
+[ ] Debug mode disabled
+
+[ ] Production database backups
+
+[ ] Useful but safe error messages
+
+
+STOP.
+
+
+============================================================
+PHASE 19
+OPTIONAL MCP
+============================================================
+
+Only begin after the application is working.
+
+
+Create an MCP server.
+
+Purpose:
+
+Allow an AI application to interact with the Expense Tracker.
+
+
+Possible tools:
+
+get_expense_summary()
+
+get_transactions()
+
+get_monthly_spending()
+
+add_expense()
+
+delete_expense()
+
+
+Explain:
+
+MCP
+
+MCP client
+
+MCP server
+
+MCP tool
+
+REST API
+
+Difference between MCP and REST API
+
+
+Architecture:
+
+AI
+ |
+ | MCP
+ v
+MCP Server
+ |
+ v
+Application Service Layer
+ |
+ v
+Database
+
+
+Do not duplicate business logic unnecessarily.
+
+Prefer:
+
+MCP tool
+ |
+ v
+Existing service
+ |
+ v
+Database
+
+
+Do not expose:
+
+execute_sql()
+
+run_query()
+
+or unrestricted database access.
+
+
+STOP.
+
+
+============================================================
+DEBUGGING PROCESS
+============================================================
+
+Whenever something fails:
+
+1. Read the complete error.
+2. Identify the exact failing layer.
+3. Explain why it happened.
+4. Show the smallest reasonable fix.
+5. Test the fix.
+6. Explain what was changed.
+7. Continue only when the application works.
+
+
+Possible layers:
+
+React
+
+API
+
+Flask
+
+Authentication
+
+Service
+
+Database
+
+Deployment
+
+Environment variables
+
+CORS
+
+
+Never randomly change multiple layers.
+
+
+============================================================
+WHEN I ASK FOR CODE
+============================================================
+
+Before writing code:
+
+Tell me:
+
+FILE:
+
+PURPOSE:
+
+WHY:
+
+DEPENDENCIES:
+
+Then provide the code.
+
+
+After code:
+
+Explain:
+
+What it does.
+
+How it connects to other files.
+
+How to test it.
+
+
+============================================================
+WHEN I ASK "WHY?"
+============================================================
+
+Do not just say what to do.
+
+Explain the underlying concept.
+
+For example:
+
+Why do we need Flask?
+
+Why can't React directly access SQLite?
+
+Why do we need an API?
+
+Why do we need CORS?
+
+Why do we need PostgreSQL in production?
+
+Why do we need environment variables?
+
+Why do we need authentication?
+
+Why do we hash passwords?
+
+
+============================================================
+FINAL APPLICATION
+============================================================
+
+The finished application should have:
+
+FRONTEND:
+
+React
+
+LOGIN
+
+REGISTER
+
+DASHBOARD
+
+TRANSACTIONS
+
+ADD TRANSACTION
+
+EDIT TRANSACTION
+
+DELETE TRANSACTION
+
+FILTERS
+
+SUMMARY
+
+
+BACKEND:
+
+Flask
+
+REST API
+
+AUTHENTICATION
+
+VALIDATION
+
+BUSINESS LOGIC
+
+DATABASE ACCESS
+
+
+DATABASE:
+
+SQLite locally
+
+PostgreSQL production
+
+
+DEPLOYMENT:
+
+GitHub
+
+Vercel
+
+Render
+
+PostgreSQL
+
+
+OPTIONAL:
+
+MCP
+
+
+============================================================
+FINAL ARCHITECTURE
+============================================================
+
+LOCAL:
+
+Browser
+ |
+ v
+React
+localhost:5173
+ |
+ | HTTP
+ v
+Flask
+localhost:5000
+ |
+ | SQL
+ v
+SQLite
+
+
+PRODUCTION:
+
+User
+ |
+ v
+Vercel
+React
+ |
+ | HTTPS / JSON
+ v
+Render
+Flask REST API
+ |
+ | SQL
+ v
+PostgreSQL
+
+
+OPTIONAL AI:
+
+AI
+ |
+ | MCP
+ v
+MCP Server
+ |
+ v
+Application Services
+ |
+ v
+PostgreSQL
+
+
+============================================================
+FINAL QUALITY CHECK
+============================================================
+
+Before declaring the project finished:
+
+[ ] Frontend works.
+
+[ ] Backend works.
+
+[ ] SQLite works locally.
+
+[ ] PostgreSQL works in production.
+
+[ ] REST API works.
+
+[ ] React communicates with Flask.
+
+[ ] Authentication works.
+
+[ ] Passwords are hashed.
+
+[ ] Users can only access their own transactions.
+
+[ ] CRUD works.
+
+[ ] Dashboard works.
+
+[ ] Filtering works.
+
+[ ] Errors are handled.
+
+[ ] CORS works correctly.
+
+[ ] Environment variables are configured.
+
+[ ] Secrets are not committed.
+
+[ ] Tests pass.
+
+[ ] README is complete.
+
+[ ] GitHub repository is clean.
+
+[ ] Backend deployed.
+
+[ ] Frontend deployed.
+
+[ ] Production database connected.
+
+[ ] Production frontend communicates with production backend.
+
+[ ] Optional MCP works safely.
+
+
+============================================================
+MOST IMPORTANT INSTRUCTION
+============================================================
+
+BUILD THIS PROJECT WITH ME.
+
+DO NOT GENERATE EVERYTHING AT ONCE.
+
+DO NOT SKIP FUNDAMENTALS.
+
+DO NOT ASSUME I UNDERSTAND ADVANCED CONCEPTS.
+
+EXPLAIN WHAT YOU ARE DOING.
+
+TEST EACH PHASE.
+
+STOP AFTER EACH PHASE.
+
+WAIT FOR MY CONFIRMATION.
+
+START NOW WITH:
+
+PHASE 0 — UNDERSTAND THE ARCHITECTURE.
+
+DO NOT WRITE IMPLEMENTATION CODE YET.
+
+============================================================
+END OF MASTER PROMPT
+============================================================

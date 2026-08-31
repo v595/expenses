@@ -107,6 +107,36 @@ def login():
     return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
 
 
+@auth_bp.route("/api/auth/google", methods=["POST"])
+def google_login():
+    data = request.get_json(silent=True) or {}
+    try:
+        user, token = auth_service.login_with_google(data.get("accessToken"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+
+
+@auth_bp.route("/api/auth/facebook", methods=["POST"])
+def facebook_login():
+    data = request.get_json(silent=True) or {}
+    try:
+        user, token = auth_service.login_with_facebook(data.get("accessToken"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+
+
+@auth_bp.route("/api/auth/firebase", methods=["POST"])
+def firebase_login():
+    data = request.get_json(silent=True) or {}
+    try:
+        user, token = auth_service.login_with_firebase(data.get("idToken"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+
+
 @auth_bp.route("/api/auth/me", methods=["GET"])
 @login_required
 def me():

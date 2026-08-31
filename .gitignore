@@ -5,6 +5,8 @@ backend/**/__pycache__/
 backend/.pytest_cache/
 backend/database/*.db
 backend/.env
+backend/firebase-service-account.json
+backend/*firebase*adminsdk*.json
 
 # Frontend (Node)
 frontend/node_modules/

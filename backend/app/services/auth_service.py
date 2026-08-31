@@ -129,6 +129,71 @@ def login(data):
     return to_public_user(user), token
 
 
+def _login_or_create_from_social(profile):
+    """Shared by Google/Facebook sign-in: log in if an account with this
+    email already exists (linking the social login to it), otherwise create
+    one. Social accounts get a random, never-typed password hash — they
+    simply can't log in with a password until they set one from Profile."""
+    if is_maintenance_mode():
+        raise AuthError("The platform is temporarily down for maintenance", 503)
+
+    email = profile["email"]
+    user = user_model.get_user_by_email(email)
+
+    if user is None:
+        password_hash = generate_password_hash(secrets.token_urlsafe(32))
+        created = user_model.create_user(profile["name"], email, password_hash)
+        user_model.promote_first_user_if_no_admin()
+        user = user_model.get_user_by_id(created["id"])
+        activity_log_model.log(user["id"], "Registered via social sign-in")
+
+    if user.get("is_suspended"):
+        raise AuthError("This account has been suspended", 403)
+
+    token = secrets.token_hex(32)
+    user_model.set_user_token(user["id"], token)
+    user_model.record_login(user["id"], _now_iso())
+    activity_log_model.log(user["id"], "Logged in via social sign-in")
+
+    return to_public_user(user), token
+
+
+def login_with_google(access_token):
+    from app.services import social_auth_service
+
+    profile = social_auth_service.verify_google_access_token(access_token)
+    return _login_or_create_from_social(profile)
+
+
+def login_with_facebook(access_token):
+    from app.services import social_auth_service
+
+    profile = social_auth_service.verify_facebook_access_token(access_token)
+    return _login_or_create_from_social(profile)
+
+
+def login_with_firebase(id_token):
+    """Handles both Firebase sign-in methods (email/password and Google) —
+    Firebase itself already checked the password or the Google identity, so
+    all that's left is verifying its token and mapping to our own user."""
+    from app.firebase import verify_firebase_id_token
+
+    if not id_token or not isinstance(id_token, str):
+        raise AuthError("Missing Firebase ID token", 400)
+
+    try:
+        decoded = verify_firebase_id_token(id_token)
+    except Exception as e:
+        raise AuthError("Could not verify Firebase credential", 401) from e
+
+    email = decoded.get("email")
+    if not email:
+        raise AuthError("Your Firebase account has no email attached", 401)
+
+    name = decoded.get("name") or email.split("@")[0]
+    return _login_or_create_from_social({"email": email.strip().lower(), "name": name})
+
+
 def update_profile(user, data):
     if not isinstance(data, dict):
         raise AuthError("Request body must be a JSON object", 400)

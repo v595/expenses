@@ -39,6 +39,18 @@ export function loginUser({ email, password }) {
   return request("/auth/login", { method: "POST", body: { email, password } });
 }
 
+export function loginWithGoogle(accessToken) {
+  return request("/auth/google", { method: "POST", body: { accessToken } });
+}
+
+export function loginWithFacebook(accessToken) {
+  return request("/auth/facebook", { method: "POST", body: { accessToken } });
+}
+
+export function loginWithFirebase(idToken) {
+  return request("/auth/firebase", { method: "POST", body: { idToken } });
+}
+
 export function getCurrentUser(token) {
   return request("/auth/me", { token });
 }

@@ -52,9 +52,13 @@ function Navbar() {
           <span>Expense Tracker</span>
         </Link>
         <div className="public-nav-links">
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-          <span style={{ marginLeft: "1.25rem", display: "inline-flex" }}>
+          <Link to="/login" className="nav-btn nav-btn-ghost">
+            Login
+          </Link>
+          <Link to="/register" className="nav-btn nav-btn-primary">
+            Register
+          </Link>
+          <span style={{ marginLeft: "0.4rem", display: "inline-flex" }}>
             <ThemeSwitch theme={theme} onToggle={toggleTheme} />
           </span>
         </div>

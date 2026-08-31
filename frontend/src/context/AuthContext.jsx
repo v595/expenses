@@ -2,11 +2,15 @@ import { createContext, useContext, useState } from "react";
 
 import {
   loginUser,
+  loginWithFacebook as apiLoginWithFacebook,
+  loginWithFirebase as apiLoginWithFirebase,
+  loginWithGoogle as apiLoginWithGoogle,
   logoutUser,
   registerUser,
   updateProfile as apiUpdateProfile,
   updateSettings as apiUpdateSettings,
 } from "../services/api";
+import { firebaseEnabled, registerWithEmail, signInWithEmail } from "../services/firebase";
 
 const AuthContext = createContext(null);
 
@@ -27,13 +31,39 @@ export function AuthProvider({ children }) {
     setAuth({ token, user });
   }
 
+  async function loginWithFirebaseToken(idToken) {
+    const data = await apiLoginWithFirebase(idToken);
+    persist(data.token, data.user);
+  }
+
+  // When Firebase Auth is configured (see services/firebase.js), email/password
+  // sign-in goes through it too — Firebase checks the password, we just verify
+  // the resulting token. Falls back to this app's own auth when it isn't set up.
   async function login(email, password) {
+    if (firebaseEnabled) {
+      const idToken = await signInWithEmail(email, password);
+      return loginWithFirebaseToken(idToken);
+    }
     const data = await loginUser({ email, password });
     persist(data.token, data.user);
   }
 
   async function register(name, email, password) {
+    if (firebaseEnabled) {
+      const idToken = await registerWithEmail(name, email, password);
+      return loginWithFirebaseToken(idToken);
+    }
     const data = await registerUser({ name, email, password });
+    persist(data.token, data.user);
+  }
+
+  async function loginWithGoogle(accessToken) {
+    const data = await apiLoginWithGoogle(accessToken);
+    persist(data.token, data.user);
+  }
+
+  async function loginWithFacebook(accessToken) {
+    const data = await apiLoginWithFacebook(accessToken);
     persist(data.token, data.user);
   }
 
@@ -66,6 +96,9 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(token),
     login,
     register,
+    loginWithGoogle,
+    loginWithFacebook,
+    loginWithFirebaseToken,
     logout,
     updateProfile,
     updateSettings,

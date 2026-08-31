@@ -1,0 +1,1328 @@
+CLAUDE — STEP-BY-STEP BUILD PROMPT
+
+PROJECT: Expense Tracker
+
+TECHNOLOGY STACK:
+- Frontend: React
+- Backend: Python Flask
+- Database: SQLite 3
+- Communication: REST API / HTTP / JSON
+- Optional final feature: MCP server
+
+==================================================
+ROLE
+==================================================
+
+You are my senior full-stack developer, teacher, and pair programmer.
+
+Help me build this project step by step.
+
+I am learning full-stack development, so do not assume that I understand advanced concepts.
+
+For every important concept, explain:
+1. What it is
+2. Why we need it
+3. Where it is used in this project
+4. How it connects to the other parts of the project
+
+Do not just give me code. Teach me while building the application.
+
+==================================================
+IMPORTANT RULES
+==================================================
+
+1. DO NOT generate the entire project at once.
+
+2. Build the project phase by phase.
+
+3. Complete only ONE phase at a time.
+
+4. After each phase, STOP and wait for my confirmation.
+
+5. Before writing code for a phase, explain:
+   - Goal
+   - What I will learn
+   - Files involved
+   - How the files communicate
+
+6. Give exact terminal commands.
+
+7. Tell me which directory each terminal command should run from.
+
+8. When creating a file, show the complete file.
+
+9. When modifying a file, show the complete updated file.
+
+10. Do not give partial code that requires guessing where to put it.
+
+11. Explain important code after showing it.
+
+12. Do not introduce unnecessary technologies.
+
+13. Keep the project beginner-friendly.
+
+14. Use professional coding practices.
+
+15. Use REST API conventions.
+
+16. Use JSON for API request and response data.
+
+17. Use appropriate HTTP status codes.
+
+18. Validate all API input.
+
+19. Never store passwords as plaintext.
+
+20. Use secure password hashing.
+
+21. Never put database credentials or secret keys in React.
+
+22. Use environment variables for secrets/configuration.
+
+23. Configure CORS correctly for local React + Flask development.
+
+24. Keep frontend API requests in:
+
+   frontend/src/services/api.js
+
+25. Keep Flask routes/controllers relatively thin.
+
+26. Put business logic in service files.
+
+27. Keep database logic organized and easy to understand.
+
+28. Do not create unnecessary layers such as:
+   - repositories
+   - microservices
+   - Redis
+   - Docker
+   - message queues
+   - Kubernetes
+
+   unless they become genuinely useful later.
+
+29. Use SQLite 3 initially.
+
+30. Keep the database design simple enough that it could later be migrated to PostgreSQL.
+
+31. When an error occurs, diagnose the actual error first.
+
+32. Do not rewrite the entire application to fix a small problem.
+
+33. When I ask a question, answer the question before continuing the build.
+
+34. At the end of every phase, provide a test checklist.
+
+35. Wait for my confirmation before continuing.
+
+==================================================
+PROJECT IDEA
+==================================================
+
+Build a real-world personal Expense Tracker.
+
+The application allows a user to:
+
+- Register
+- Login
+- Logout
+- Add income
+- Add expenses
+- View transactions
+- Edit transactions
+- Delete transactions
+- Search transactions
+- Filter transactions
+- Filter by category
+- Filter by date
+- View total income
+- View total expenses
+- View current balance
+- View monthly spending
+- View category spending
+
+Later we can add:
+
+- Charts
+- Budgets
+- Recurring expenses
+- CSV export
+- PostgreSQL
+- Deployment
+- Docker
+- MCP
+- AI integration
+
+==================================================
+HIGH-LEVEL ARCHITECTURE
+==================================================
+
+The application has three main parts.
+
+1. React frontend
+
+Responsible for:
+
+- UI
+- Forms
+- Buttons
+- Pages
+- User interaction
+- Displaying data
+
+2. Flask backend
+
+Responsible for:
+
+- REST API
+- Business logic
+- Authentication
+- Validation
+- Database communication
+
+3. SQLite database
+
+Responsible for:
+
+- Storing users
+- Storing transactions
+
+The architecture should look like:
+
+React Frontend
+      |
+      | HTTP / JSON
+      ↓
+Flask REST API
+      |
+      ↓
+SQLite Database
+
+==================================================
+REQUEST FLOW
+==================================================
+
+Explain this flow to me before implementation.
+
+Example:
+
+User fills out an expense form.
+
+        ↓
+
+React TransactionForm.jsx
+
+        ↓
+
+frontend/src/services/api.js
+
+        ↓
+
+HTTP POST request
+
+        ↓
+
+Flask
+
+/api/transactions
+
+        ↓
+
+transactions.py
+
+        ↓
+
+transaction_service.py
+
+        ↓
+
+database/model layer
+
+        ↓
+
+SQLite
+
+        ↓
+
+JSON response
+
+        ↓
+
+React
+
+        ↓
+
+Updated UI
+
+Explain every step in simple language.
+
+==================================================
+TARGET PROJECT STRUCTURE
+==================================================
+
+Create this structure gradually.
+
+expense-tracker/
+
+├── frontend/
+
+│   ├── public/
+
+│   │
+│   ├── src/
+│   │
+│   │   ├── components/
+│   │   │
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── TransactionForm.jsx
+│   │   │   ├── TransactionList.jsx
+│   │   │   └── SummaryCard.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   └── Transactions.jsx
+│   │   │
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   │
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   │
+│   └── package.json
+│
+├── backend/
+│
+│   ├── app/
+│   │
+│   │   ├── routes/
+│   │   │
+│   │   │   ├── auth.py
+│   │   │   ├── transactions.py
+│   │   │   └── dashboard.py
+│   │   │
+│   │   ├── models/
+│   │   │
+│   │   │   ├── user.py
+│   │   │   └── transaction.py
+│   │   │
+│   │   ├── services/
+│   │   │
+│   │   │   ├── auth_service.py
+│   │   │   └── transaction_service.py
+│   │   │
+│   │   ├── __init__.py
+│   │   ├── database.py
+│   │   └── config.py
+│   │
+│   ├── database/
+│   │   └── expense_tracker.db
+│   │
+│   ├── run.py
+│   └── requirements.txt
+│
+├── README.md
+│
+└── .gitignore
+
+Do not create all these files immediately.
+
+Create them only when they are needed.
+
+==================================================
+DATABASE DESIGN
+==================================================
+
+Use SQLite 3.
+
+Initially create two tables.
+
+TABLE: users
+
+Columns:
+
+id
+name
+email
+password_hash
+created_at
+
+TABLE: transactions
+
+Columns:
+
+id
+user_id
+amount
+type
+category
+description
+date
+created_at
+
+Relationship:
+
+users.id
+    ↓
+transactions.user_id
+
+One user can have many transactions.
+
+Explain:
+
+- Primary key
+- Foreign key
+- One-to-many relationship
+- Why user_id is required
+- Why password_hash is used instead of password
+
+==================================================
+TRANSACTION TYPES
+==================================================
+
+The transaction type should be:
+
+income
+
+or
+
+expense
+
+Example:
+
+Income:
+
+Salary
+Freelance
+Bonus
+
+Expenses:
+
+Food
+Shopping
+Transport
+Bills
+Entertainment
+Health
+Education
+Other
+
+Do not hard-code too many categories unnecessarily.
+
+==================================================
+API DESIGN
+==================================================
+
+Authentication:
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+GET /api/auth/me
+
+
+Transactions:
+
+GET /api/transactions
+
+GET /api/transactions/<id>
+
+POST /api/transactions
+
+PUT /api/transactions/<id>
+
+DELETE /api/transactions/<id>
+
+
+Dashboard:
+
+GET /api/dashboard/summary
+
+GET /api/dashboard/monthly
+
+Explain every endpoint before implementing it.
+
+==================================================
+EXAMPLE API REQUEST
+==================================================
+
+Example:
+
+POST /api/transactions
+
+Content-Type: application/json
+
+Request:
+
+{
+    "amount": 500,
+    "type": "expense",
+    "category": "Food",
+    "description": "Lunch",
+    "date": "2026-08-19"
+}
+
+The backend should:
+
+1. Receive the request
+2. Validate the data
+3. Identify the authenticated user
+4. Save the transaction
+5. Return JSON
+6. Return an appropriate HTTP status code
+
+==================================================
+EXAMPLE RESPONSE
+==================================================
+
+Example successful response:
+
+{
+    "message": "Transaction created successfully",
+    "transaction": {
+        "id": 1,
+        "amount": 500,
+        "type": "expense",
+        "category": "Food",
+        "description": "Lunch",
+        "date": "2026-08-19"
+    }
+}
+
+Explain why JSON is being used.
+
+==================================================
+PHASE 0 — ARCHITECTURE
+==================================================
+
+DO NOT WRITE IMPLEMENTATION CODE YET.
+
+Explain:
+
+1. What is frontend?
+2. What is backend?
+3. What is Flask?
+4. What is React?
+5. What is SQLite?
+6. What is an API?
+7. What is REST API?
+8. What is HTTP?
+9. What is JSON?
+10. What is a database?
+11. How React communicates with Flask
+12. How Flask communicates with SQLite
+13. What happens when a user adds an expense
+
+Show the complete request flow.
+
+Then give me a small quiz with 5 questions.
+
+After explaining everything:
+
+STOP.
+
+Wait for my confirmation.
+
+==================================================
+PHASE 1 — PROJECT SETUP
+==================================================
+
+Goal:
+
+Create the basic project.
+
+Tasks:
+
+1. Check Python installation.
+2. Check Node.js installation.
+3. Create project directory.
+4. Create frontend.
+5. Create backend.
+6. Create Python virtual environment.
+7. Install Flask.
+8. Install CORS support.
+9. Create requirements.txt.
+10. Create basic Flask application.
+11. Create health endpoint.
+12. Start Flask.
+13. Start React.
+
+Health endpoint:
+
+GET /api/health
+
+Expected response:
+
+{
+    "status": "ok"
+}
+
+Explain:
+
+- Python virtual environment
+- pip
+- npm
+- package.json
+- requirements.txt
+- Flask app
+- localhost
+- ports
+
+Test:
+
+Open the Flask API in the browser or API client.
+
+Then:
+
+STOP.
+
+Wait for confirmation.
+
+==================================================
+PHASE 2 — SQLITE DATABASE
+==================================================
+
+Goal:
+
+Connect Flask to SQLite.
+
+Tasks:
+
+1. Create database directory.
+2. Create SQLite database.
+3. Create users table.
+4. Create transactions table.
+5. Add primary keys.
+6. Add foreign key.
+7. Add timestamps.
+8. Create database helper functions.
+9. Test database connection.
+
+Explain:
+
+- SQLite
+- SQL
+- CREATE TABLE
+- INSERT
+- SELECT
+- UPDATE
+- DELETE
+- WHERE
+- PRIMARY KEY
+- FOREIGN KEY
+
+Show the database structure.
+
+Then test:
+
+Create a test user.
+
+Create a test transaction.
+
+Read it back.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 3 — FLASK APPLICATION STRUCTURE
+==================================================
+
+Goal:
+
+Organize Flask correctly.
+
+Create:
+
+app/__init__.py
+
+app/config.py
+
+app/database.py
+
+app/routes/
+
+app/models/
+
+app/services/
+
+Explain why each folder exists.
+
+Explain:
+
+Route
+Service
+Model
+Database
+
+Use a simple example.
+
+Show:
+
+React
+ ↓
+Route
+ ↓
+Service
+ ↓
+Database
+
+Then implement the structure.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 4 — TRANSACTION CRUD API
+==================================================
+
+Implement:
+
+GET /api/transactions
+
+GET /api/transactions/<id>
+
+POST /api/transactions
+
+PUT /api/transactions/<id>
+
+DELETE /api/transactions/<id>
+
+For every endpoint explain:
+
+- URL
+- HTTP method
+- Request body
+- Response body
+- Status code
+- Error cases
+
+Implement validation.
+
+Validation examples:
+
+Amount must be greater than zero.
+
+Type must be:
+
+income
+
+or
+
+expense
+
+Category must not be empty.
+
+Date must be valid.
+
+Description should have reasonable length limits.
+
+Test every endpoint.
+
+Use curl or another simple API client.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 5 — USER AUTHENTICATION
+==================================================
+
+Implement:
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+GET /api/auth/me
+
+Tasks:
+
+1. Register user.
+2. Validate email.
+3. Check duplicate email.
+4. Hash password.
+5. Save password hash.
+6. Login.
+7. Verify password.
+8. Establish authentication.
+9. Protect transaction APIs.
+10. Identify current user.
+11. Prevent users from seeing other users' transactions.
+
+Explain authentication carefully.
+
+Explain:
+
+Authentication
+Authorization
+Password hashing
+Session/token
+Protected route
+Current user
+
+Never store plaintext passwords.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 6 — REACT FRONTEND
+==================================================
+
+Goal:
+
+Build the UI.
+
+Create:
+
+Login.jsx
+
+Register.jsx
+
+Dashboard.jsx
+
+Transactions.jsx
+
+Navbar.jsx
+
+TransactionForm.jsx
+
+TransactionList.jsx
+
+SummaryCard.jsx
+
+Explain React concepts while building:
+
+- Components
+- Props
+- State
+- Events
+- Forms
+- useState
+- useEffect
+- Conditional rendering
+- Lists
+- Keys
+
+Keep the UI simple.
+
+Do not add a complicated component library unless necessary.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 7 — CONNECT REACT TO FLASK
+==================================================
+
+Create:
+
+frontend/src/services/api.js
+
+All API calls should be centralized there.
+
+Implement:
+
+registerUser()
+
+loginUser()
+
+getCurrentUser()
+
+getTransactions()
+
+getTransaction()
+
+createTransaction()
+
+updateTransaction()
+
+deleteTransaction()
+
+getDashboardSummary()
+
+Explain:
+
+fetch()
+
+HTTP methods
+
+headers
+
+JSON.stringify()
+
+response.json()
+
+async/await
+
+error handling
+
+CORS
+
+Connect React to Flask.
+
+Test:
+
+Register from React.
+
+Login from React.
+
+Add transaction from React.
+
+View transaction from React.
+
+Edit transaction.
+
+Delete transaction.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 8 — DASHBOARD
+==================================================
+
+Build dashboard.
+
+Display:
+
+Total Income
+
+Total Expenses
+
+Balance
+
+Number of Transactions
+
+Top Spending Category
+
+Monthly Spending
+
+Category Spending
+
+Example:
+
+Income:
+₹50,000
+
+Expenses:
+₹12,500
+
+Balance:
+₹37,500
+
+Create:
+
+GET /api/dashboard/summary
+
+GET /api/dashboard/monthly
+
+Explain how Flask calculates totals using SQL.
+
+Then connect the React dashboard.
+
+Only after the basic dashboard works, optionally add charts.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 9 — FILTERING AND SEARCH
+==================================================
+
+Add:
+
+Search
+
+Category filter
+
+Transaction type filter
+
+Date filter
+
+Amount sorting if useful
+
+Explain query parameters.
+
+Example:
+
+GET /api/transactions?category=Food
+
+Example:
+
+GET /api/transactions?type=expense
+
+Example:
+
+GET /api/transactions?start_date=2026-08-01&end_date=2026-08-31
+
+Implement backend filtering.
+
+Then implement frontend controls.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 10 — ERROR HANDLING
+==================================================
+
+Implement useful errors.
+
+Examples:
+
+400 Bad Request
+
+401 Unauthorized
+
+403 Forbidden
+
+404 Not Found
+
+409 Conflict
+
+500 Internal Server Error
+
+Create consistent JSON error responses.
+
+Example:
+
+{
+    "error": "Transaction not found"
+}
+
+Explain every status code.
+
+Test invalid requests.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 11 — TESTING
+==================================================
+
+Create backend tests.
+
+Test:
+
+Registration
+
+Duplicate email
+
+Login
+
+Invalid password
+
+Create transaction
+
+Read transaction
+
+Update transaction
+
+Delete transaction
+
+Unauthorized request
+
+User ownership
+
+Invalid input
+
+Dashboard calculations
+
+Explain:
+
+Unit testing
+
+API testing
+
+Integration testing
+
+Do not create excessive tests.
+
+Focus on important application behavior.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 12 — PROJECT CLEANUP
+==================================================
+
+Review the entire project.
+
+Check:
+
+- Naming
+- Duplicate code
+- Error handling
+- Security
+- Validation
+- API consistency
+- Frontend structure
+- Backend structure
+- Database design
+
+Create:
+
+README.md
+
+Explain:
+
+Project description
+
+Features
+
+Technology stack
+
+Installation
+
+Backend setup
+
+Frontend setup
+
+Database setup
+
+How to run
+
+API endpoints
+
+Project structure
+
+Future improvements
+
+Create a useful .gitignore.
+
+Then:
+
+STOP.
+
+==================================================
+PHASE 13 — OPTIONAL MCP
+==================================================
+
+Only start this phase after the full application works.
+
+Goal:
+
+Allow an AI application to interact with the Expense Tracker through MCP.
+
+Possible MCP tools:
+
+get_expense_summary()
+
+get_transactions()
+
+get_monthly_spending()
+
+add_expense()
+
+delete_expense()
+
+Do NOT expose:
+
+execute_sql()
+
+run_any_query()
+
+or unrestricted database access.
+
+Explain:
+
+What is MCP?
+
+Why use MCP?
+
+MCP vs REST API
+
+MCP client
+
+MCP server
+
+MCP tool
+
+How MCP connects to the existing application
+
+Architecture:
+
+AI
+ |
+ | MCP
+ ↓
+MCP Server
+ |
+ ↓
+Application Service Layer
+ |
+ ↓
+SQLite
+
+Prefer calling the existing service layer rather than duplicating database logic.
+
+Then:
+
+STOP.
+
+==================================================
+SECURITY REQUIREMENTS
+==================================================
+
+Throughout the project follow these rules:
+
+1. Hash passwords.
+2. Never return password hashes to the frontend.
+3. Never store secrets in React.
+4. Use environment variables.
+5. Validate API input.
+6. Check authenticated user ownership.
+7. Do not allow user A to access user B's transactions.
+8. Use parameterized SQL queries.
+9. Do not expose arbitrary SQL execution.
+10. Configure CORS intentionally.
+11. Do not enable debug mode in production.
+12. Use HTTPS in production.
+13. Do not commit secrets to Git.
+
+==================================================
+CODE STYLE
+==================================================
+
+Use:
+
+Python:
+- clear function names
+- snake_case
+- type hints where helpful
+- small functions
+- useful comments
+- no unnecessary complexity
+
+React:
+- functional components
+- clear component names
+- camelCase variables/functions
+- reusable components
+- simple state management initially
+
+==================================================
+HOW TO TEACH ME
+==================================================
+
+Whenever you introduce something new, explain it using:
+
+WHAT:
+What is this?
+
+WHY:
+Why do we need it?
+
+WHERE:
+Where is it used?
+
+HOW:
+How does it work?
+
+Example:
+
+WHAT:
+A Flask route is an endpoint that handles an HTTP request.
+
+WHY:
+React needs an endpoint to communicate with the backend.
+
+WHERE:
+backend/app/routes/transactions.py
+
+HOW:
+React sends an HTTP request, Flask receives it, processes it, and returns JSON.
+
+==================================================
+DEBUGGING RULE
+==================================================
+
+If I give you an error:
+
+1. Read the complete error.
+2. Identify the likely cause.
+3. Explain the cause.
+4. Tell me exactly which file needs changing.
+5. Show the corrected complete file.
+6. Explain why the correction works.
+7. Give me the command to test it.
+
+Do not randomly change multiple files.
+
+==================================================
+FINAL PROJECT GOAL
+==================================================
+
+At the end I should have:
+
+A working React frontend.
+
+A working Flask backend.
+
+A working SQLite database.
+
+A REST API.
+
+User authentication.
+
+Transaction CRUD.
+
+Dashboard.
+
+Filtering.
+
+Validation.
+
+Error handling.
+
+Tests.
+
+README.
+
+Clean project structure.
+
+Optional MCP integration.
+
+==================================================
+MOST IMPORTANT RULE
+==================================================
+
+DO NOT SKIP STEPS.
+
+DO NOT GENERATE THE WHOLE PROJECT AT ONCE.
+
+TEACH ME.
+
+BUILD WITH ME.
+
+AFTER EACH PHASE, STOP AND WAIT FOR MY CONFIRMATION.
+
+==================================================
+START
+==================================================
+
+Start with PHASE 0.
+
+Explain the architecture in beginner-friendly language.
+
+Do not write implementation code yet.
+
+At the end of PHASE 0, give me a 5-question quiz and wait for my answers.

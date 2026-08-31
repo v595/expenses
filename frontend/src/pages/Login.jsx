@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
+import SocialAuthButtons from "../components/SocialAuthButtons";
 import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
+  const [forgotNotice, setForgotNotice] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -27,8 +30,8 @@ function Login() {
   }
 
   return (
-    <div className="page page-narrow">
-      <div className="card card-padded">
+    <AuthLayout>
+      <div className="card card-padded auth-card">
         <div className="page-header">
           <h1>Welcome back</h1>
           <p>Log in to your account.</p>
@@ -46,13 +49,20 @@ function Login() {
             onChange={handleChange}
             required
           />
+          <button type="button" className="link-btn" onClick={() => setForgotNotice(true)}>
+            Forgot password?
+          </button>
+          {forgotNotice && (
+            <p className="social-auth-notice">Password reset isn't available yet.</p>
+          )}
           <button type="submit">Login</button>
         </form>
-        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "1rem" }}>
+        <SocialAuthButtons />
+        <p className="auth-footer-text">
           No account? <Link to="/register">Register</Link>
         </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
 

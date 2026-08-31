@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
-from werkzeug.security import check_password_hash
+from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models import role as role_model
 from app.models import user as user_model
@@ -12,6 +13,14 @@ from app.services.settings_service import ALLOWED_CURRENCIES
 admin_dashboard_bp = Blueprint("admin_dashboard", __name__)
 
 SESSION_KEY = "dashboard_admin_id"
+RESET_TOKEN_TTL = timedelta(minutes=30)
+
+# In-memory reset-token store: token -> {"user_id": int, "expires": datetime}.
+# There's no outbound email in this app, so a reset "sends" by logging the
+# link server-side instead. Fine for a single-process dev app; an in-memory
+# store means links don't survive a restart, which is an acceptable trade-off
+# here since anyone can just request a new one.
+_reset_tokens = {}
 
 
 def _time_ago(timestamp_str):
@@ -164,6 +173,53 @@ def login():
 def logout():
     session.pop(SESSION_KEY, None)
     return redirect(url_for("admin_dashboard.login"))
+
+
+@admin_dashboard_bp.route("/admin/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if session.get(SESSION_KEY):
+        return redirect(url_for("admin_dashboard.dashboard"))
+
+    message = None
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        user = user_model.get_user_by_email(email)
+        if user and user.get("is_admin") and not user.get("is_suspended"):
+            token = secrets.token_urlsafe(32)
+            _reset_tokens[token] = {
+                "user_id": user["id"],
+                "expires": datetime.now(timezone.utc) + RESET_TOKEN_TTL,
+            }
+            reset_url = url_for("admin_dashboard.reset_password", token=token, _external=True)
+            current_app.logger.info("Admin password reset link for %s: %s", email, reset_url)
+        # Same message whether or not the account exists, so this page can't be
+        # used to check which emails have admin access.
+        message = "If that email has admin access, a reset link has been printed to the server console."
+
+    return render_template("admin_forgot_password.html", message=message)
+
+
+@admin_dashboard_bp.route("/admin/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    entry = _reset_tokens.get(token)
+    if not entry or entry["expires"] < datetime.now(timezone.utc):
+        _reset_tokens.pop(token, None)
+        return render_template("admin_reset_password.html", expired=True, error=None)
+
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password") or ""
+        confirm = request.form.get("confirm") or ""
+        if len(password) < 6:
+            error = "Password must be at least 6 characters."
+        elif password != confirm:
+            error = "Passwords don't match."
+        else:
+            user_model.update_password(entry["user_id"], generate_password_hash(password))
+            _reset_tokens.pop(token, None)
+            return redirect(url_for("admin_dashboard.login"))
+
+    return render_template("admin_reset_password.html", expired=False, error=error)
 
 
 @admin_dashboard_bp.route("/admin")

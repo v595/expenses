@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
+import SocialAuthButtons from "../components/SocialAuthButtons";
 import { useAuth } from "../context/AuthContext";
 
 function Register() {
@@ -27,8 +29,8 @@ function Register() {
   }
 
   return (
-    <div className="page page-narrow">
-      <div className="card card-padded">
+    <AuthLayout>
+      <div className="card card-padded auth-card">
         <div className="page-header">
           <h1>Create an account</h1>
           <p>Start tracking your income and expenses.</p>
@@ -53,11 +55,12 @@ function Register() {
           />
           <button type="submit">Register</button>
         </form>
-        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "1rem" }}>
+        <SocialAuthButtons />
+        <p className="auth-footer-text">
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
 
