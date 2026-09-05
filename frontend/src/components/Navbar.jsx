@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import Avatar from "./Avatar";
+import { LogoMark } from "./Logo";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../hooks/useTheme";
 import NotificationBell from "./NotificationBell";
@@ -17,17 +18,12 @@ import {
   IconTag,
   IconTarget,
   IconTransactions,
-  IconWallet,
   IconWalletStack,
   IconX,
 } from "./icons";
 
 function BrandMark() {
-  return (
-    <span className="brand-mark">
-      <IconWallet width={17} height={17} />
-    </span>
-  );
+  return <LogoMark size={30} />;
 }
 
 function Navbar() {
@@ -41,7 +37,7 @@ function Navbar() {
       <nav className="public-nav">
         <Link to="/login" className="public-nav-brand">
           <BrandMark />
-          <span>Expense Tracker</span>
+          <span>Hisaab</span>
         </Link>
         <div className="public-nav-links">
           <Link to="/login" className="nav-btn nav-btn-ghost">
@@ -87,7 +83,7 @@ function Navbar() {
         </button>
         <Link to="/" className="sidebar-brand">
           <BrandMark />
-          <span>Expense Tracker</span>
+          <span>Hisaab</span>
         </Link>
         <span style={{ marginLeft: "auto" }}>
           <NotificationBell />
@@ -100,7 +96,7 @@ function Navbar() {
         <div className="sidebar-brand-section">
           <Link to="/" className="sidebar-brand">
             <BrandMark />
-            <span>Expense Tracker</span>
+            <span>Hisaab</span>
           </Link>
           <span className="sidebar-bell">
             <NotificationBell />

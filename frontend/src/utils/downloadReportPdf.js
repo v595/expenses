@@ -86,7 +86,7 @@ export function downloadReportPdf({ period, userName, transactions, range, curre
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(17);
   doc.setFont(undefined, "bold");
-  doc.text("Expense Tracker", 14, 15);
+  doc.text("Hisaab", 14, 15);
   doc.setFontSize(10.5);
   doc.setFont(undefined, "normal");
   doc.text(`${PERIOD_LABEL[period]} Budget Report`, 14, 23);
@@ -185,7 +185,7 @@ export function downloadReportPdf({ period, userName, transactions, range, curre
       doc.setFontSize(8);
       doc.setTextColor(...MUTED);
       doc.text(
-        `Generated ${new Date().toLocaleDateString()} - Expense Tracker`,
+        `Generated ${new Date().toLocaleDateString()} - Hisaab`,
         14,
         pageHeight - 8
       );

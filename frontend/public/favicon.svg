@@ -1,12 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6366f1"/>
-      <stop offset="1" stop-color="#7c3aed"/>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <path d="M16 22a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v3h-9a5 5 0 0 0 0 10h9v3a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4z" fill="#fff"/>
-  <path d="M39 28h9v8h-9a4 4 0 0 1 0-8z" fill="#4338ca"/>
-  <circle cx="39" cy="32" r="1.6" fill="#fff"/>
+  <rect width="64" height="64" rx="16" fill="url(#t)"/>
+  <g fill="#fff">
+    <rect x="17" y="30" width="7" height="18" rx="3.5" opacity=".72"/>
+    <rect x="28.5" y="22" width="7" height="26" rx="3.5" opacity=".86"/>
+    <rect x="40" y="14" width="7" height="34" rx="3.5"/>
+    <rect x="17" y="31.5" width="30" height="5" rx="2.5" opacity=".95"/>
+  </g>
 </svg>

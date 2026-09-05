@@ -1605,6 +1605,23 @@ button.btn-danger:hover {
   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
 }
 
+/* --- Brand --- */
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Tight tracking keeps the wordmark reading as a mark rather than a sentence. */
+.logo-word,
+.sidebar-brand span,
+.public-nav-brand span,
+.auth-visual-brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 /* --- Custom select --- */
 
 .select {

@@ -1,4 +1,5 @@
 import { IconCheck, IconTrendingDown, IconTrendingUp } from "./icons";
+import { LogoMark } from "./Logo";
 
 const FEATURES = [
   "Track every income & expense in seconds",
@@ -16,10 +17,8 @@ function AuthLayout({ children }) {
 
         <div className="auth-visual-content">
           <div className="auth-visual-brand">
-            <span className="brand-mark">
-              <IconTrendingUp width={17} height={17} />
-            </span>
-            Expense Tracker
+            <LogoMark size={30} tile={false} />
+            Hisaab
           </div>
 
           <div className="auth-visual-copy">
