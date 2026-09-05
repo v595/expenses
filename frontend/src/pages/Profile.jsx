@@ -1,13 +1,33 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Avatar from "../components/Avatar";
+import { IconCamera, IconLogout } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
+import { DEFAULT_CURRENCY } from "../utils/currency";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB, matches the backend cap
 
+// Backend stores timestamps as "YYYY-MM-DD HH:MM:SS", which Safari refuses to
+// parse with `new Date(...)`. Reading the date part directly avoids that.
+function formatJoined(createdAt) {
+  const [y, m, d] = String(createdAt).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function IconSpinner() {
+  return <span className="btn-spinner" aria-hidden="true" />;
+}
+
 function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState(null); // { type: 'success' | 'error', message }
@@ -67,6 +87,16 @@ function Profile() {
     reader.readAsDataURL(file);
   }
 
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await logout();
+      navigate("/login");
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
   async function handlePasswordSubmit(event) {
     event.preventDefault();
     setPasswordStatus(null);
@@ -95,40 +125,61 @@ function Profile() {
         <p>Manage your account details.</p>
       </div>
 
-      <div className="dashboard-grid">
-        <div className="card card-padded">
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
-            <Avatar user={user} size={56} />
-            <div>
-              <div style={{ fontWeight: 700 }}>{user.name}</div>
-              <div style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>{user.email}</div>
+      <div className="profile-hero card">
+        <div className="profile-hero-cover" />
+        <div className="profile-hero-body">
+          <button
+            type="button"
+            className="profile-avatar-btn"
+            onClick={() => fileInputRef.current.click()}
+            disabled={avatarUploading}
+            aria-label="Change profile picture"
+          >
+            <Avatar user={user} size={88} />
+            <span className="profile-avatar-overlay">
+              {avatarUploading ? <IconSpinner /> : <IconCamera width={18} height={18} />}
+            </span>
+          </button>
+
+          <div className="profile-hero-meta">
+            <h2>{user.name}</h2>
+            <p>{user.email}</p>
+            <div className="profile-badges">
+              {user.is_admin && <span className="profile-badge accent">Admin</span>}
+              <span className="profile-badge">{user.currency || DEFAULT_CURRENCY}</span>
+              {user.created_at && (
+                <span className="profile-badge muted">
+                  Joined {formatJoined(user.created_at)}
+                </span>
+              )}
             </div>
           </div>
+        </div>
 
-          {avatarStatus && (
-            <p className={avatarStatus.type === "error" ? "error-message" : "success-message"}>
-              {avatarStatus.message}
-            </p>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            style={{ display: "none" }}
-          />
-          <div className="form-actions" style={{ marginBottom: "1.5rem" }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => fileInputRef.current.click()}
-              disabled={avatarUploading}
-            >
-              {avatarUploading ? "Uploading..." : "Change Picture"}
-            </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarChange}
+          hidden
+        />
+        {avatarStatus && (
+          <p
+            className={`profile-hero-status ${
+              avatarStatus.type === "error" ? "error-message" : "success-message"
+            }`}
+          >
+            {avatarStatus.message}
+          </p>
+        )}
+      </div>
+
+      <div className="profile-grid">
+        <div className="card card-padded">
+          <div className="profile-card-head">
+            <h2 className="card-title">Personal details</h2>
+            <p>The name shown across your account.</p>
           </div>
-
-          <h2 className="card-title">Name</h2>
           {nameStatus && (
             <p className={nameStatus.type === "error" ? "error-message" : "success-message"}>
               {nameStatus.message}
@@ -139,14 +190,25 @@ function Profile() {
               Full name
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
+            <label>
+              Email
+              {/* Read-only: the address is the account identity and is also
+                  what Google sign-in matches on, so it isn't editable here. */}
+              <input type="email" value={user.email} disabled />
+            </label>
             <div className="form-actions">
-              <button type="submit">Save Name</button>
+              <button type="submit" disabled={name.trim() === user.name}>
+                Save changes
+              </button>
             </div>
           </form>
         </div>
 
         <div className="card card-padded">
-          <h2 className="card-title">Change Password</h2>
+          <div className="profile-card-head">
+            <h2 className="card-title">Password</h2>
+            <p>Use at least 6 characters.</p>
+          </div>
           {passwordStatus && (
             <p className={passwordStatus.type === "error" ? "error-message" : "success-message"}>
               {passwordStatus.message}
@@ -189,9 +251,27 @@ function Profile() {
               />
             </label>
             <div className="form-actions">
-              <button type="submit">Change Password</button>
+              <button type="submit">Update password</button>
             </div>
           </form>
+        </div>
+
+        <div className="card card-padded profile-signout">
+          <div className="profile-card-head">
+            <h2 className="card-title">Sign out</h2>
+            <p>You'll be signed out on this device and returned to the login page.</p>
+          </div>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={handleLogout}
+              disabled={loggingOut}
+            >
+              <IconLogout width={18} height={18} />
+              {loggingOut ? "Signing out..." : "Logout"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

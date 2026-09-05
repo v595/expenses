@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { logPageView } from "./services/api";
+import { loadRates } from "./utils/fx";
 import Accounts from "./pages/Accounts";
 import Bills from "./pages/Bills";
 import Budgets from "./pages/Budgets";
@@ -170,6 +171,12 @@ function Layout() {
 }
 
 function App() {
+  // Warm the FX table once at startup so the first render of any amount
+  // already has real rates rather than the offline fallback.
+  useEffect(() => {
+    loadRates();
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

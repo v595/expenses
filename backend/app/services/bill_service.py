@@ -6,6 +6,23 @@ from app.services.recurring_service import _advance
 
 VALID_FREQUENCIES = ("none", "weekly", "monthly", "yearly")
 MAX_NAME_LENGTH = 80
+# Must stay in step with BILL_TYPES in frontend/src/components/billIcons.jsx.
+VALID_BILL_TYPES = (
+    "electricity",
+    "water",
+    "gas",
+    "internet",
+    "mobile",
+    "rent",
+    "insurance",
+    "subscription",
+    "credit_card",
+    "loan",
+    "education",
+    "medical",
+    "transport",
+    "other",
+)
 
 
 def get_bills(user_id):
@@ -40,8 +57,13 @@ def create_bill(user_id, data):
     if repeat_frequency not in VALID_FREQUENCIES:
         raise ValueError(f"Repeat frequency must be one of {', '.join(VALID_FREQUENCIES)}")
 
+    # Optional: bills created before this field existed simply have none.
+    bill_type = data.get("bill_type") or None
+    if bill_type is not None and bill_type not in VALID_BILL_TYPES:
+        raise ValueError(f"Bill type must be one of {', '.join(VALID_BILL_TYPES)}")
+
     bill = bill_model.create_bill(
-        user_id, name.strip(), float(amount), due_date, repeat_frequency
+        user_id, name.strip(), float(amount), due_date, repeat_frequency, bill_type
     )
     activity_log_model.log(user_id, "Created bill", f"{name.strip()} {float(amount):.2f} due {due_date}")
     return bill

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { IconPlus, IconTrash } from "../components/icons";
+import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { createCategory, deleteCategory, getCategories } from "../services/api";
 
@@ -76,10 +77,15 @@ function Categories() {
           </label>
           <label>
             Type
-            <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
+            <Select
+              ariaLabel="Category type"
+              value={form.type}
+              onChange={(type) => setForm((f) => ({ ...f, type }))}
+              options={[
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+              ]}
+            />
           </label>
         </div>
         <label>

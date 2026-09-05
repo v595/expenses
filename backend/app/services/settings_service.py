@@ -9,7 +9,7 @@ def update_settings(user, data):
     if not isinstance(data, dict):
         raise ValueError("Request body must be a JSON object")
 
-    currency = data.get("currency", user.get("currency") or "USD")
+    currency = data.get("currency", user.get("currency") or "INR")
     if currency not in ALLOWED_CURRENCIES:
         raise ValueError(f"Currency must be one of {', '.join(ALLOWED_CURRENCIES)}")
 

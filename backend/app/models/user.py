@@ -133,11 +133,15 @@ def delete_user(user_id):
         Account,
         ActivityLog,
         Bill,
+        Book,
         Budget,
         Category,
         Goal,
+        LedgerEntry,
         Notification,
+        Party,
         RecurringTransaction,
+        Reminder,
         Tag,
         Transaction,
         transaction_tags,
@@ -151,6 +155,12 @@ def delete_user(user_id):
             transaction_tags.delete().where(transaction_tags.c.transaction_id.in_(transaction_ids))
         )
     db.session.query(Transaction).filter_by(user_id=user_id).delete()
+    # Books sit at the top of the khatabook chain, so reminders/ledger
+    # entries/parties go first, then the books themselves.
+    db.session.query(Reminder).filter_by(user_id=user_id).delete()
+    db.session.query(LedgerEntry).filter_by(user_id=user_id).delete()
+    db.session.query(Party).filter_by(user_id=user_id).delete()
+    db.session.query(Book).filter_by(user_id=user_id).delete()
     db.session.query(Tag).filter_by(user_id=user_id).delete()
     db.session.query(Budget).filter_by(user_id=user_id).delete()
     db.session.query(RecurringTransaction).filter_by(user_id=user_id).delete()

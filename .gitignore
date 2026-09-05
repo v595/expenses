@@ -3,7 +3,10 @@ backend/venv/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/.pytest_cache/
-backend/database/*.db
+# Matches the db and every backup variant (.db.bak, .db.bak2, .db-wal, ...).
+# The narrower `*.db` + `*.db.bak` pair missed a `.db.bak2` snapshot, which
+# would have published every user's email and password hash.
+backend/database/*.db*
 backend/.env
 backend/firebase-service-account.json
 backend/*firebase*adminsdk*.json

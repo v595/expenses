@@ -1,12 +1,39 @@
 import { useEffect, useState } from "react";
 
 import { IconPlus, IconTrash, IconWalletStack } from "../components/icons";
+import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
+import { ALL_ACCOUNT_SOURCES } from "../data/banks";
 import { createAccount, deleteAccount, getAccounts } from "../services/api";
+import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const TYPES = ["cash", "bank", "card", "savings", "other"];
-const EMPTY_FORM = { name: "", type: "cash", balance: "" };
+const EMPTY_FORM = { name: "", type: "cash", balance: "", source: "" };
+
+const TYPE_OPTIONS = TYPES.map((t) => ({
+  value: t,
+  label: t[0].toUpperCase() + t.slice(1),
+}));
+
+// Tinted initials rather than the real bank logo — see the note in data/banks.js.
+function BankBadge({ short, color }) {
+  return (
+    <span className="bank-badge" style={{ background: color }} aria-hidden="true">
+      {short}
+    </span>
+  );
+}
+
+const SOURCE_OPTIONS = ALL_ACCOUNT_SOURCES.map((b) => ({
+  value: b.value,
+  label: b.label,
+  icon: <BankBadge short={b.short} color={b.color} />,
+}));
+
+// Picking a bank pre-fills the account name and the closest matching type, so
+// the common case is one choice instead of three fields.
+const SOURCE_TYPE = { cash: "cash", upi: "cash", credit_card: "card" };
 
 function Accounts() {
   const { token, user } = useAuth();
@@ -15,6 +42,21 @@ function Accounts() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  function handleSourceChange(source) {
+    const picked = ALL_ACCOUNT_SOURCES.find((b) => b.value === source);
+    setForm((f) => ({
+      ...f,
+      source,
+      type: SOURCE_TYPE[source] || "bank",
+      // Only auto-fill while the name is still untouched or was filled by a
+      // previous pick, so we never overwrite something typed by hand.
+      name:
+        !f.name || ALL_ACCOUNT_SOURCES.some((b) => b.label === f.name)
+          ? picked?.label || ""
+          : f.name,
+    }));
+  }
 
   function refresh() {
     setLoading(true);
@@ -33,7 +75,10 @@ function Accounts() {
     event.preventDefault();
     setError(null);
     try {
-      await createAccount({ ...form, balance: form.balance ? Number(form.balance) : 0 }, token);
+      await createAccount(
+        { ...form, balance: form.balance ? toBase(form.balance, user.currency) : 0 },
+        token
+      );
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -65,24 +110,33 @@ function Accounts() {
       <form className="card card-padded transaction-form" onSubmit={handleSubmit}>
         <div className="form-row">
           <label>
-            Name
+            Bank / Source
+            <Select
+              ariaLabel="Bank or account source"
+              placeholder="Choose a bank"
+              value={form.source}
+              onChange={handleSourceChange}
+              options={SOURCE_OPTIONS}
+            />
+          </label>
+          <label>
+            Account name
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. HDFC Checking"
+              placeholder="e.g. Salary account"
               required
             />
           </label>
           <label>
             Type
-            <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t[0].toUpperCase() + t.slice(1)}
-                </option>
-              ))}
-            </select>
+            <Select
+              ariaLabel="Account type"
+              value={form.type}
+              onChange={(type) => setForm((f) => ({ ...f, type }))}
+              options={TYPE_OPTIONS}
+            />
           </label>
           <label>
             Starting Balance

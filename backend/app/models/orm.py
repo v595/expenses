@@ -64,7 +64,7 @@ class User(db.Model):
     token = db.Column(db.Text)
     avatar = db.Column(db.Text)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-    currency = db.Column(db.Text, nullable=False, default="USD")
+    currency = db.Column(db.Text, nullable=False, default="INR")
     notify_budget_alerts = db.Column(db.Boolean, nullable=False, default=True)
     notify_bill_reminders = db.Column(db.Boolean, nullable=False, default=True)
     last_login_at = db.Column(db.Text)
@@ -155,6 +155,11 @@ class Transaction(db.Model):
     # account can be deleted while transactions still carry its old id.
     account_id = db.Column(db.Integer)
     receipt = db.Column(db.Text)
+    # Which Book (workspace) this transaction belongs to. Nullable on purpose:
+    # every pre-Books transaction, and any client that doesn't send one yet,
+    # keeps working exactly as before. The 0004 migration backfills existing
+    # rows onto each user's default book.
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"))
 
     tags = db.relationship("Tag", secondary=transaction_tags, backref="transactions")
 
@@ -171,6 +176,7 @@ class Transaction(db.Model):
             "created_at": self.created_at,
             "account_id": self.account_id,
             "receipt": self.receipt,
+            "book_id": self.book_id,
         }
 
 
@@ -249,6 +255,9 @@ class Bill(db.Model):
     due_date = db.Column(db.Text, nullable=False)
     is_paid = db.Column(db.Boolean, nullable=False, default=False)
     repeat_frequency = db.Column(db.Text)
+    # Which kind of bill this is (electricity, rent, ...) — drives the icon in
+    # the UI. Nullable so bills created before this existed still load.
+    bill_type = db.Column(db.Text)
 
     def to_dict(self):
         return {
@@ -259,6 +268,7 @@ class Bill(db.Model):
             "due_date": self.due_date,
             "is_paid": self.is_paid,
             "repeat_frequency": self.repeat_frequency,
+            "bill_type": self.bill_type,
         }
 
 
@@ -369,3 +379,139 @@ class SystemSetting(db.Model):
 
     def to_dict(self):
         return {"key": self.key, "value": self.value, "updated_at": self.updated_at}
+
+
+class Book(db.Model):
+    """A workspace the user switches between (Business / Personal / Home /
+    Daily). Every user always has at least one — see
+    `app.models.book.ensure_default_book`."""
+
+    __tablename__ = "books"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "name"),
+        db.CheckConstraint("type IN ('business', 'personal', 'home', 'daily')"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    type = db.Column(db.Text, nullable=False, default="personal")
+    is_default = db.Column(db.Boolean, nullable=False, default=False)
+    color = db.Column(db.Text)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "type": self.type,
+            "is_default": self.is_default,
+            "color": self.color,
+            "created_at": self.created_at,
+        }
+
+
+class Party(db.Model):
+    """A customer or supplier a book keeps a running ledger with."""
+
+    __tablename__ = "parties"
+    __table_args__ = (
+        db.UniqueConstraint("book_id", "name", "type"),
+        db.CheckConstraint("type IN ('customer', 'supplier')"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    # Stored normalised to digits plus an optional leading '+', so the same
+    # number always renders (and builds a wa.me link) the same way.
+    phone = db.Column(db.Text)
+    type = db.Column(db.Text, nullable=False)
+    note = db.Column(db.Text)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "name": self.name,
+            "phone": self.phone,
+            "type": self.type,
+            "note": self.note,
+            "created_at": self.created_at,
+        }
+
+
+class LedgerEntry(db.Model):
+    """One credit/debit line against a party. The meaning of `direction` and
+    how it rolls up into a balance lives in exactly one place —
+    `app.models.ledger_entry` — never re-derive the sign anywhere else."""
+
+    __tablename__ = "ledger_entries"
+    __table_args__ = (
+        db.CheckConstraint("direction IN ('given', 'got')"),
+        db.CheckConstraint("amount > 0"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    party_id = db.Column(db.Integer, db.ForeignKey("parties.id"), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    direction = db.Column(db.Text, nullable=False)
+    description = db.Column(db.Text)
+    date = db.Column(db.Text, nullable=False)
+    due_date = db.Column(db.Text)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "party_id": self.party_id,
+            "amount": self.amount,
+            "direction": self.direction,
+            "description": self.description,
+            "date": self.date,
+            "due_date": self.due_date,
+            "created_at": self.created_at,
+        }
+
+
+class Reminder(db.Model):
+    """A payment reminder raised against a party. Nothing is actually sent by
+    the default driver — see `app.services.messaging` — so `status` stays
+    'pending' until the caller confirms the message was opened/sent."""
+
+    __tablename__ = "reminders"
+    __table_args__ = (
+        db.CheckConstraint("channel IN ('whatsapp', 'sms', 'inapp')"),
+        db.CheckConstraint("status IN ('pending', 'sent', 'failed')"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    party_id = db.Column(db.Integer, db.ForeignKey("parties.id"), nullable=False)
+    channel = db.Column(db.Text, nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.Text, nullable=False, default="pending")
+    sent_at = db.Column(db.Text)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "party_id": self.party_id,
+            "channel": self.channel,
+            "message": self.message,
+            "status": self.status,
+            "sent_at": self.sent_at,
+            "created_at": self.created_at,
+        }

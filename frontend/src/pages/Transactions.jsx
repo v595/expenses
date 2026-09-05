@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { IconDownload, IconSearch, IconUpload } from "../components/icons";
+import Select from "../components/Select";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import { useAuth } from "../context/AuthContext";
@@ -156,11 +157,16 @@ function Transactions() {
         </div>
         <div className="filter-field">
           <label>Type</label>
-          <select name="type" value={filters.type} onChange={handleFilterChange}>
-            <option value="">All types</option>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
+          <Select
+            ariaLabel="Filter by type"
+            value={filters.type}
+            onChange={(value) => handleFilterChange({ target: { name: "type", value } })}
+            options={[
+              { value: "", label: "All types" },
+              { value: "income", label: "Income" },
+              { value: "expense", label: "Expense" },
+            ]}
+          />
         </div>
         <div className="filter-field">
           <label>From</label>
@@ -173,14 +179,15 @@ function Transactions() {
         {tags.length > 0 && (
           <div className="filter-field">
             <label>Tag</label>
-            <select name="tag_id" value={filters.tag_id} onChange={handleFilterChange}>
-              <option value="">All tags</option>
-              {tags.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              ariaLabel="Filter by tag"
+              value={filters.tag_id}
+              onChange={(value) => handleFilterChange({ target: { name: "tag_id", value } })}
+              options={[
+                { value: "", label: "All tags" },
+                ...tags.map((t) => ({ value: String(t.id), label: t.name })),
+              ]}
+            />
           </div>
         )}
         <button type="button" className="btn-secondary" onClick={() => setFilters(EMPTY_FILTERS)}>

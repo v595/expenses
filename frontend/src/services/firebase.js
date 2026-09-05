@@ -1,12 +1,5 @@
 import { initializeApp } from "firebase/app";
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  updateProfile,
-} from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -28,28 +21,16 @@ function getFirebaseAuth() {
   return authInstance;
 }
 
-// Every helper below returns a fresh Firebase ID token — that's the only
-// thing the backend needs; it verifies the token itself (see
+// Returns a fresh Firebase ID token — that's the only thing the backend
+// needs; it verifies the token itself (see
 // app/services/auth_service.py:login_with_firebase) rather than trusting
 // anything else the client sends.
-
+//
+// Google is deliberately the only Firebase sign-in method here. Email/password
+// stays on our own backend so that accounts created before Firebase existed
+// keep working; see the note in context/AuthContext.jsx.
 export async function signInWithGooglePopup() {
   const auth = getFirebaseAuth();
   const result = await signInWithPopup(auth, new GoogleAuthProvider());
-  return result.user.getIdToken();
-}
-
-export async function signInWithEmail(email, password) {
-  const auth = getFirebaseAuth();
-  const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user.getIdToken();
-}
-
-export async function registerWithEmail(name, email, password) {
-  const auth = getFirebaseAuth();
-  const result = await createUserWithEmailAndPassword(auth, email, password);
-  if (name) {
-    await updateProfile(result.user, { displayName: name });
-  }
   return result.user.getIdToken();
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { IconFlag, IconPlus, IconTrash } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { addGoalFunds, createGoal, deleteGoal, getGoals } from "../services/api";
+import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const EMPTY_FORM = { name: "", target_amount: "", target_date: "" };
@@ -34,7 +35,11 @@ function Goals() {
     setError(null);
     try {
       await createGoal(
-        { ...form, target_amount: Number(form.target_amount), target_date: form.target_date || null },
+        {
+          ...form,
+          target_amount: toBase(form.target_amount, user.currency),
+          target_date: form.target_date || null,
+        },
         token
       );
       setForm(EMPTY_FORM);

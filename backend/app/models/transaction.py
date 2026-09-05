@@ -66,6 +66,16 @@ def update_transaction(transaction_id, amount, type_, category, description, dat
     return transaction.to_dict()
 
 
+def unassign_book(book_id, user_id):
+    """Drops a deleted book's id off any transaction still pointing at it.
+    book_id is nullable precisely so a transaction outlives its book instead
+    of being deleted with it."""
+    db.session.query(Transaction).filter_by(book_id=book_id, user_id=user_id).update(
+        {Transaction.book_id: None}
+    )
+    db.session.commit()
+
+
 def delete_transaction(transaction_id):
     db.session.execute(transaction_tags.delete().where(transaction_tags.c.transaction_id == transaction_id))
     db.session.query(Transaction).filter_by(id=transaction_id).delete()

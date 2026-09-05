@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import SummaryCard from "../components/SummaryCard";
 import { IconDownload, IconReceipt, IconTrendingDown, IconTrendingUp, IconWallet } from "../components/icons";
+import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardInsights, getDashboardSummary, getTransactions } from "../services/api";
 import { categoryColor } from "../utils/categoryColor";
@@ -55,11 +56,16 @@ function Dashboard() {
           <p>Here's what's happening with your money.</p>
         </div>
         <div className="report-download">
-          <select value={reportPeriod} onChange={(e) => setReportPeriod(e.target.value)}>
-            <option value="week">Weekly</option>
-            <option value="month">Monthly</option>
-            <option value="year">Yearly</option>
-          </select>
+          <Select
+            ariaLabel="Report period"
+            value={reportPeriod}
+            onChange={setReportPeriod}
+            options={[
+              { value: "week", label: "Weekly" },
+              { value: "month", label: "Monthly" },
+              { value: "year", label: "Yearly" },
+            ]}
+          />
           <button type="button" onClick={handleDownload} disabled={downloading}>
             <IconDownload width={16} height={16} />
             {downloading ? "Preparing..." : "Download PDF"}

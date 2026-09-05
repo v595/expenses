@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 
 import { IconPlus, IconTrash } from "../components/icons";
+import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { createRecurring, deleteRecurring, getRecurring } from "../services/api";
+import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const EMPTY_FORM = {
@@ -44,7 +46,7 @@ function Recurring() {
     event.preventDefault();
     setError(null);
     try {
-      await createRecurring({ ...form, amount: Number(form.amount) }, token);
+      await createRecurring({ ...form, amount: toBase(form.amount, user.currency) }, token);
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -87,10 +89,15 @@ function Recurring() {
           </label>
           <label>
             Type
-            <select name="type" value={form.type} onChange={handleChange}>
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
+            <Select
+              ariaLabel="Type"
+              value={form.type}
+              onChange={(value) => handleChange({ target: { name: "type", value } })}
+              options={[
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+              ]}
+            />
           </label>
         </div>
 
@@ -108,11 +115,16 @@ function Recurring() {
           </label>
           <label>
             Frequency
-            <select name="frequency" value={form.frequency} onChange={handleChange}>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
+            <Select
+              ariaLabel="Frequency"
+              value={form.frequency}
+              onChange={(value) => handleChange({ target: { name: "frequency", value } })}
+              options={[
+                { value: "weekly", label: "Weekly" },
+                { value: "monthly", label: "Monthly" },
+                { value: "yearly", label: "Yearly" },
+              ]}
+            />
           </label>
         </div>
 

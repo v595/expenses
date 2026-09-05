@@ -3,8 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getAccounts } from "../services/api";
 import { IconPlus, IconUpload } from "./icons";
+import Select from "./Select";
+import { fromBase, toBase } from "../utils/fx";
 
 const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
+
+const TYPE_OPTIONS = [
+  { value: "expense", label: "Expense" },
+  { value: "income", label: "Income" },
+];
 
 function emptyForm() {
   return {
@@ -19,22 +26,30 @@ function emptyForm() {
   };
 }
 
-function toFormValues(initialValues) {
+function toFormValues(initialValues, currency) {
   if (!initialValues) return emptyForm();
   return {
     ...initialValues,
+    // Stored in the base currency, but the field is edited in the currency
+    // on screen — otherwise editing a row would show a different number than
+    // the list did, and saving would silently re-scale it.
+    amount: round2(fromBase(initialValues.amount, currency)),
     account_id: initialValues.account_id ?? "",
     tags: (initialValues.tags || []).map((t) => t.name).join(", "),
     receipt: initialValues.receipt ?? null,
   };
 }
 
+function round2(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
 // initialValues lets this same form be reused for both "add" and "edit".
 // onSubmit is a callback prop — the parent decides what actually happens
 // with the data (in Phase 6: log it; in Phase 7: send it to the API).
 function TransactionForm({ initialValues, onSubmit, onCancel }) {
-  const { token } = useAuth();
-  const [form, setForm] = useState(() => toFormValues(initialValues));
+  const { token, user } = useAuth();
+  const [form, setForm] = useState(() => toFormValues(initialValues, user?.currency));
   const [accounts, setAccounts] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -64,7 +79,8 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
     event.preventDefault(); // stop the browser's default full-page reload on submit
     onSubmit({
       ...form,
-      amount: Number(form.amount),
+      // Typed in whatever currency is on screen; stored in the base currency.
+      amount: toBase(form.amount, user?.currency),
       account_id: form.account_id ? Number(form.account_id) : null,
       tags: form.tags
         .split(",")
@@ -94,10 +110,12 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
 
         <label>
           Type
-          <select name="type" value={form.type} onChange={handleChange}>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
+          <Select
+            ariaLabel="Transaction type"
+            value={form.type}
+            onChange={(type) => handleChange({ target: { name: "type", value: type } })}
+            options={TYPE_OPTIONS}
+          />
         </label>
       </div>
 
@@ -123,14 +141,15 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
       <div className="form-row">
         <label>
           Account
-          <select name="account_id" value={form.account_id} onChange={handleChange}>
-            <option value="">No account</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            ariaLabel="Account"
+            value={form.account_id}
+            onChange={(id) => handleChange({ target: { name: "account_id", value: id } })}
+            options={[
+              { value: "", label: "No account" },
+              ...accounts.map((a) => ({ value: String(a.id), label: a.name })),
+            ]}
+          />
         </label>
 
         <label>

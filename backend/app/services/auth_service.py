@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models import activity_log as activity_log_model
+from app.models import book as book_model
 from app.models import system_setting as system_setting_model
 from app.models import user as user_model
 
@@ -84,6 +85,7 @@ def register(data):
     password_hash = generate_password_hash(clean["password"])
     user = user_model.create_user(clean["name"], clean["email"], password_hash)
     user_model.promote_first_user_if_no_admin()
+    book_model.ensure_default_book(user["id"])
     user = user_model.get_user_by_id(user["id"])
 
     token = secrets.token_hex(32)
@@ -121,6 +123,11 @@ def login(data):
     if is_maintenance_mode() and not user.get("is_admin"):
         raise AuthError("The platform is temporarily down for maintenance", 503)
 
+    # Cheap (one COUNT) and idempotent — see book_model.ensure_default_book.
+    # Doing it here as well as on registration means accounts created before
+    # Books existed get their book on their next login.
+    book_model.ensure_default_book(user["id"])
+
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)
     user_model.record_login(user["id"], _now_iso())
@@ -149,6 +156,8 @@ def _login_or_create_from_social(profile):
 
     if user.get("is_suspended"):
         raise AuthError("This account has been suspended", 403)
+
+    book_model.ensure_default_book(user["id"])
 
     token = secrets.token_hex(32)
     user_model.set_user_token(user["id"], token)

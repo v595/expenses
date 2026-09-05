@@ -1,40 +1,75 @@
+/* Palette follows 9278.ai: red-600 primary on a Tailwind neutral scale,
+   Inter, 10px radius. Red is an accent on mostly-white surfaces — it earns
+   attention because it is used sparingly, so resist filling large areas
+   with it. --color-primary-rgb exists so alpha shades (glows, rings, soft
+   fills) can be derived from one value and follow the theme into dark mode
+   instead of being hardcoded per rule. */
 :root {
-  --color-bg: #f4f5f7;
+  /* A hair warmer than neutral-50 so the gaps between the ambient pools don't
+     snap back to a cold grey. */
+  --color-bg: #fdfafa;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
-  --color-primary-soft: #eef2ff;
-  --color-income: #16a34a;
+  --color-border: #e5e5e5;
+  --color-text: #171717;
+  --color-text-muted: #737373;
+  --color-primary: #dc2626;
+  --color-primary-rgb: 220, 38, 38;
+  --color-primary-hover: #b91c1c;
+  --color-primary-soft: #fef2f2;
+  --color-accent: #f59e0b;
+  --color-income: #059669;
   --color-income-soft: #ecfdf5;
   --color-expense: #dc2626;
   --color-expense-soft: #fef2f2;
-  --color-sidebar-bg: #111827;
-  --color-sidebar-text: #9ca3af;
+  --color-sidebar-bg: #171717;
+  --color-sidebar-text: #a3a3a3;
   --color-sidebar-text-active: #ffffff;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.04);
-  --shadow-card-hover: 0 4px 10px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
-  --gradient-income: linear-gradient(135deg, #22c55e 0%, #059669 100%);
+  --shadow-card: 0 1px 2px rgba(23, 23, 23, 0.05), 0 1px 3px rgba(23, 23, 23, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(23, 23, 23, 0.08), 0 2px 4px rgba(23, 23, 23, 0.05);
+  --gradient-brand: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  --gradient-income: linear-gradient(135deg, #10b981 0%, #047857 100%);
   --gradient-expense: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  /* Frosted surfaces: translucent fill + blur. Always pair --glass-bg with
+     --glass-blur; without the blur it just reads as a washed-out panel. */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 16px;
+  /* Strength of the three ambient background pools (see `body`). Tokenised so
+     light and dark can be tuned independently — the same alpha that reads as a
+     soft blush on white turns into a muddy smear on near-black. */
+  --wash-strong: 0.1;
+  --wash-mid: 0.075;
+  --wash-soft: 0.055;
   --navbar-height: 64px;
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #0f1117;
-  --color-surface: #171923;
-  --color-border: #2b2f3a;
-  --color-text: #e5e7eb;
-  --color-text-muted: #9ca3af;
-  --color-primary-soft: #23244a;
-  --color-income-soft: #0f2a1c;
-  --color-expense-soft: #2c1618;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 4px 10px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --color-bg: #0a0a0a;
+  --color-surface: #171717;
+  --color-border: #292929;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  /* Red-600 is too dense on a near-black ground; red-500 holds contrast. */
+  --color-primary: #ef4444;
+  --color-primary-rgb: 239, 68, 68;
+  --color-primary-hover: #f87171;
+  --color-primary-soft: #2a1416;
+  --color-income: #34d399;
+  --color-income-soft: #0c2a20;
+  --color-expense: #f87171;
+  --color-expense-soft: #2a1416;
+  --color-sidebar-bg: #0f0f0f;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(23, 23, 23, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  /* Colour reads much louder against near-black, so the pools are dialled
+     back hard here — enough to warm the corners, not enough to look maroon. */
+  --wash-strong: 0.07;
+  --wash-mid: 0.055;
+  --wash-soft: 0.04;
 }
 
 :root[data-theme="dark"] input,
@@ -45,7 +80,7 @@
 }
 
 :root[data-theme="dark"] .transaction-list th {
-  background: #1c1f2a;
+  background: #1f1f1f;
 }
 
 
@@ -56,10 +91,36 @@
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--color-bg);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color 0.15s, color 0.15s;
+
+  /* Ambient brand wash. Three wide, very low-opacity red pools rather than one
+     flat tint: a flat tint just makes the page look dirty, whereas pools give
+     the surface some depth and let the white cards read as lifted off it.
+     Kept under ~12% so it stays a hint of colour, not a pink page — the cards,
+     text and buttons still have to be the things you notice.
+     background-attachment: fixed keeps the pools anchored to the viewport, so
+     they don't tile or drift down long pages. */
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(
+      1100px circle at 8% -8%,
+      rgba(var(--color-primary-rgb), var(--wash-strong)),
+      transparent 62%
+    ),
+    radial-gradient(
+      850px circle at 104% 6%,
+      rgba(var(--color-primary-rgb), var(--wash-mid)),
+      transparent 58%
+    ),
+    radial-gradient(
+      900px circle at 50% 108%,
+      rgba(var(--color-primary-rgb), var(--wash-soft)),
+      transparent 60%
+    );
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 h1, h2, h3 {
@@ -81,21 +142,27 @@ h1, h2, h3 {
   color: var(--color-sidebar-text);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1rem;
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
-  overflow-y: auto;
+  /* Never scrolls. Rather than relying on fixed spacing that happens to fit a
+     tall window, every vertical gap here is tied to viewport height with
+     clamp(), so the nav compresses on short screens instead of overflowing.
+     The clamp minimums keep all 10 links + brand + footer inside roughly
+     470px, comfortably under any real browser window. */
+  overflow: hidden;
+  padding: clamp(0.75rem, 2vh, 1.5rem) 1rem;
 }
 
 .sidebar-brand-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.5rem 1.25rem;
-  margin-bottom: 1.25rem;
+  padding: 0 0.5rem clamp(0.5rem, 1.4vh, 0.9rem);
+  margin-bottom: clamp(0.5rem, 1.4vh, 0.9rem);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
@@ -150,7 +217,7 @@ h1, h2, h3 {
   height: 30px;
   border-radius: 8px;
   background: var(--gradient-brand);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.4);
   color: white;
   display: flex;
   align-items: center;
@@ -161,19 +228,31 @@ h1, h2, h3 {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: clamp(0.1rem, 0.55vh, 0.35rem);
+  /* Stretches so the user block + theme toggle stay pinned to the bottom.
+     space-between then shares whatever height is left over evenly between
+     the links instead of letting it pool into one dead gap above the footer,
+     and it self-balances: on a short window there is nothing spare to share,
+     so the links simply sit at their natural size. */
   flex: 1;
+  min-height: 0;
+  justify-content: space-between;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.6rem 0.75rem;
+  /* Scales with viewport height so links are roomy on a tall window and
+     compact on a short one. The negative offset makes them shrink away
+     quickly below ~700px tall, which is what stops the nav overflowing into
+     the footer; plain `vh` fell off too slowly and collided. */
+  padding: clamp(0.3rem, calc(-0.9rem + 3.6vh), 0.95rem) 0.75rem;
   border-radius: var(--radius-md);
   color: var(--color-sidebar-text);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -185,13 +264,14 @@ h1, h2, h3 {
 .sidebar-link.active {
   background: var(--gradient-brand);
   color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.35);
 }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
-  margin-top: 1rem;
+  padding-top: clamp(0.5rem, 1.4vh, 0.85rem);
+  margin-top: clamp(0.5rem, 1.4vh, 0.9rem);
+  flex-shrink: 0;
 }
 
 .sidebar-user {
@@ -261,9 +341,9 @@ h1, h2, h3 {
   height: var(--navbar-height);
   box-sizing: border-box;
   padding: 0 1.5rem;
-  background: rgba(17, 24, 39, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(23, 23, 23, 0.72);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   color: white;
 }
@@ -300,12 +380,12 @@ h1, h2, h3 {
 
 .nav-btn-ghost {
   color: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(129, 140, 248, 0.65);
+  border: 2px solid rgba(255, 255, 255, 0.25);
 }
 
 .nav-btn-ghost:hover {
-  background: rgba(99, 102, 241, 0.16);
-  border-color: rgba(129, 140, 248, 0.85);
+  background: rgba(var(--color-primary-rgb), 0.16);
+  border-color: rgba(var(--color-primary-rgb), 0.9);
   color: white;
 }
 
@@ -313,11 +393,11 @@ h1, h2, h3 {
   background: var(--gradient-brand);
   color: white;
   border: 2px solid transparent;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 2px 10px rgba(var(--color-primary-rgb), 0.45);
 }
 
 .nav-btn-primary:hover {
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.55);
+  box-shadow: 0 4px 14px rgba(var(--color-primary-rgb), 0.55);
   transform: translateY(-1px);
 }
 
@@ -424,25 +504,112 @@ h1, h2, h3 {
   gap: 0.3rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #374151;
+  /* Was hardcoded #374151, which sat at roughly 1.5:1 against the dark-mode
+     card and made every form label near-invisible. Follows the theme now. */
+  color: var(--color-text);
 }
 
 input,
-select {
-  padding: 0.55rem 0.7rem;
+select,
+textarea {
+  padding: 0.55rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 0.92rem;
-  background: white;
+  background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.14);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+/* --- Select: drop the OS widget, draw our own chevron ---
+   A bare <select> is rendered by the operating system, which is why it looked
+   dated next to everything else. appearance:none removes that chrome while
+   keeping the real <select> underneath — so keyboard support, screen readers
+   and (importantly for the phone app) the native mobile wheel picker all keep
+   working. A hand-rolled listbox would have thrown all of that away. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2.2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* The dropdown list itself is painted by the browser and can't be styled;
+   setting these at least stops it rendering as white-on-white in dark mode. */
+select option {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* --- Date & time fields ---
+   Chrome shows a small grey system glyph that clashes with the rest of the
+   form. Hide it and paint our own calendar icon in the same spot; clicking
+   the field still opens the native picker. */
+input[type="date"],
+input[type="month"],
+input[type="time"] {
+  position: relative;
+  padding-right: 2.2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+input[type="date"]:focus,
+input[type="month"]:focus,
+input[type="time"]:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  /* Sits invisibly over our icon so the whole right edge stays clickable. */
+  position: absolute;
+  right: 0;
+  width: 2.2rem;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+:root[data-theme="dark"] input[type="date"]::-webkit-datetime-edit,
+:root[data-theme="dark"] input[type="time"]::-webkit-datetime-edit {
+  color: var(--color-text);
 }
 
 button {
@@ -467,7 +634,7 @@ button {
 button:hover {
   background-position: 100% 100%;
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 10px rgba(var(--color-primary-rgb), 0.3);
 }
 
 button:active {
@@ -542,11 +709,25 @@ button.btn-icon.danger:hover {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--color-border);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
 }
 
-.summary-card:hover {
-  box-shadow: var(--shadow-card-hover);
+/* Hover lifts the card on a brand-tinted edge and glow. The neutral grey
+   shadow alone read as a hard black outline against the light page. */
+.summary-card:hover,
+.account-card:hover,
+.goal-card:hover,
+.budget-card:hover,
+.transaction-list-card:hover {
+  border-color: rgba(var(--color-primary-rgb), 0.5);
+  box-shadow: 0 4px 14px rgba(var(--color-primary-rgb), 0.16),
+    0 2px 4px rgba(var(--color-primary-rgb), 0.08);
+}
+
+.summary-card:hover,
+.account-card:hover,
+.goal-card:hover,
+.budget-card:hover {
   transform: translateY(-2px);
 }
 
@@ -595,7 +776,7 @@ button.btn-icon.danger:hover {
 .summary-card--balance .summary-card-icon {
   background: var(--gradient-brand);
   color: white;
-  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 3px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .summary-card--count .summary-card-icon {
@@ -1054,8 +1235,7 @@ button.btn-icon.danger:hover {
 
 .auth-page {
   display: flex;
-  height: calc(100vh - var(--navbar-height));
-  overflow: hidden;
+  min-height: calc(100vh - var(--navbar-height));
 }
 
 .auth-visual {
@@ -1180,12 +1360,15 @@ button.btn-icon.danger:hover {
   background: rgba(255, 255, 255, 0.16);
 }
 
+/* On the red hero, tinted green/red pills turn muddy — both sit too close to
+   the background hue. White translucent keeps them legible; the up/down icon
+   already carries the income-vs-expense meaning. */
 .auth-mock-pill.income {
-  background: rgba(34, 197, 94, 0.28);
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .auth-mock-pill.expense {
-  background: rgba(248, 113, 113, 0.28);
+  background: rgba(0, 0, 0, 0.16);
 }
 
 .auth-mock-bars {
@@ -1236,44 +1419,95 @@ button.btn-icon.danger:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  overflow-y: auto;
+  padding: 1.25rem;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
-  padding: 1.75rem 1.85rem;
-  border: 2px solid rgba(99, 102, 241, 0.45);
+  max-width: 384px;
+  padding: 1.3rem 1.4rem;
+  border: 2px solid rgba(var(--color-primary-rgb), 0.45);
 }
 
 .auth-card .page-header {
-  margin-bottom: 1.15rem;
+  margin-bottom: 0.85rem;
 }
 
 .auth-card form {
-  gap: 0.7rem;
+  gap: 0.55rem;
+}
+
+.social-auth-section {
+  margin-top: 0.8rem;
+}
+
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.social-divider span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .social-auth-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.6rem;
+  gap: 0.5rem;
 }
 
 .btn-social {
   width: 100%;
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  font-size: 0.85rem;
-  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  box-shadow: none;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
 .btn-social:hover {
+  transform: none;
+}
+
+.btn-social:active {
+  transform: scale(0.99);
+}
+
+.btn-social-google {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-social-google:hover {
   background: var(--color-bg);
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.btn-social-facebook {
+  background: #1877f2;
+  color: #fff;
+  border: 1px solid #1877f2;
+}
+
+.btn-social-facebook:hover {
+  background: #166fe0;
+  border-color: #166fe0;
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.35);
 }
 
 .social-auth-notice {
@@ -1308,7 +1542,7 @@ button.btn-icon.danger:hover {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   text-align: center;
-  margin: 0.9rem 0 0;
+  margin: 0.7rem 0 0;
 }
 
 @media (max-width: 900px) {
@@ -1369,6 +1603,382 @@ button.btn-danger {
 
 button.btn-danger:hover {
   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+}
+
+/* --- Custom select --- */
+
+.select {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.select-trigger:hover:not(:disabled) {
+  background: var(--color-surface);
+  border-color: var(--color-text-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.select-trigger:focus-visible,
+.select-open .select-trigger {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.14);
+}
+
+.select-value {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.select-value > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-placeholder {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.select-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.select-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+}
+
+.select-open .select-chevron {
+  transform: rotate(180deg);
+  color: var(--color-primary);
+}
+
+.select-list {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  max-height: 264px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 28px rgba(23, 23, 23, 0.14), 0 2px 6px rgba(23, 23, 23, 0.06);
+  animation: select-in 0.12s ease-out;
+  scrollbar-width: thin;
+}
+
+:root[data-theme="dark"] .select-list {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+/* One highlight, driven by keyboard AND hover, so arrowing and pointing never
+   show two competing "current" rows. */
+.select-option.is-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.select-option.is-active .select-icon {
+  color: var(--color-primary);
+}
+
+.select-option.is-selected {
+  font-weight: 600;
+}
+
+.select-option.is-selected::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-option-hint {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.select-option.is-selected .select-option-hint {
+  margin-left: auto;
+}
+
+.flag {
+  border-radius: 2px;
+  display: block;
+}
+
+.bill-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.bill-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* Monogram badge standing in for a bank logo. */
+.bank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+/* --- Profile --- */
+
+.profile-hero {
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+/* Brand band behind the avatar. Gives the page an anchor so it opens with
+   identity rather than a stack of identical form cards. */
+.profile-hero-cover {
+  height: 96px;
+  background: var(--gradient-brand);
+  position: relative;
+}
+
+.profile-hero-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(420px circle at 82% 0%, rgba(255, 255, 255, 0.22), transparent 70%);
+}
+
+.profile-hero-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.15rem;
+  padding: 0 1.5rem 1.35rem;
+  /* Pull the avatar up so it straddles the band, the way a profile header
+     normally reads. */
+  margin-top: -44px;
+}
+
+.profile-avatar-btn {
+  position: relative;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 0;
+  box-shadow: 0 0 0 4px var(--color-surface), var(--shadow-card-hover);
+  transition: transform 0.15s;
+}
+
+.profile-avatar-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 4px var(--color-surface), var(--shadow-card-hover);
+}
+
+.profile-avatar-btn:disabled {
+  cursor: wait;
+}
+
+/* The "change picture" affordance only appears on hover/focus so the avatar
+   itself stays clean at rest. */
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(23, 23, 23, 0.55);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.profile-avatar-btn:hover .profile-avatar-overlay,
+.profile-avatar-btn:focus-visible .profile-avatar-overlay,
+.profile-avatar-btn:disabled .profile-avatar-overlay {
+  opacity: 1;
+}
+
+.profile-hero-meta {
+  min-width: 0;
+  padding-bottom: 0.2rem;
+}
+
+.profile-hero-meta h2 {
+  margin: 0 0 0.15rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.profile-hero-meta p {
+  margin: 0 0 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  word-break: break-word;
+}
+
+.profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.profile-badge.accent {
+  background: var(--color-primary-soft);
+  border-color: rgba(var(--color-primary-rgb), 0.25);
+  color: var(--color-primary);
+}
+
+.profile-hero-status {
+  margin: 0 1.5rem 1.25rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.profile-card-head {
+  margin-bottom: 1.1rem;
+}
+
+.profile-card-head .card-title {
+  margin-bottom: 0.2rem;
+}
+
+.profile-card-head p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+}
+
+.profile-signout .form-actions {
+  margin-top: 0;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-hero-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
 }
 
 /* --- Category color swatches --- */
@@ -1536,6 +2146,17 @@ button.btn-danger:hover {
   line-height: 1;
 }
 
+/* The sidebar clips its children (overflow:hidden keeps the nav from
+   scrolling), and this panel is wider than the 220px sidebar, so anchoring it
+   inside would cut it in half. `fixed` takes it out of the sidebar's clipping
+   context entirely and floats it beside the panel instead. */
+.sidebar-bell .notification-dropdown {
+  position: fixed;
+  top: 64px;
+  left: calc(220px + 10px);
+  right: auto;
+}
+
 .notification-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -1684,4 +2305,241 @@ button.btn-danger:hover {
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+}
+
+/* --- Surface treatments (9278.ai-inspired) --- */
+
+/* A very faint grid behind the app, like 9278.ai's hero. It is near-invisible
+   on its own; its job is to give the frosted surfaces below something to
+   blur, which is what actually sells the glass effect. Fixed so it doesn't
+   slide around while the page scrolls. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.45;
+  /* Fade the grid out toward the bottom so it never competes with content. */
+  mask-image: linear-gradient(to bottom, black 0%, transparent 75%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 75%);
+}
+
+:root[data-theme="dark"] body::before {
+  opacity: 0.3;
+}
+
+/* Frosted panel. Only meaningful over the grid or the gradient hero — over a
+   flat fill it reads as a slightly grey card, so use it deliberately. */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+}
+
+.auth-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  /* The old 2px accent border shouted; 9278.ai keeps borders hairline and
+     lets shadow carry the elevation instead. */
+  border: 1px solid var(--color-border);
+  box-shadow: 0 12px 32px rgba(23, 23, 23, 0.1), 0 2px 6px rgba(23, 23, 23, 0.05);
+}
+
+:root[data-theme="dark"] .auth-card {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-topbar {
+  background: rgba(23, 23, 23, 0.82);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Summary tiles get a hairline gradient edge on top — a small brand cue that
+   costs no extra chrome. */
+.summary-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-brand);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.summary-card:hover::after {
+  opacity: 1;
+}
+
+/* --- Mobile / device polish --- */
+
+/* index.html sets viewport-fit=cover so the app can paint edge to edge on a
+   notched phone. That is only safe if the fixed chrome also respects the
+   safe-area insets, otherwise the top bar slides under the notch and the
+   sidebar's last item sits under the home indicator. env() resolves to 0 on
+   devices without insets, so these are no-ops on desktop. */
+.mobile-topbar {
+  padding-top: calc(0.9rem + env(safe-area-inset-top));
+  height: calc(56px + env(safe-area-inset-top));
+  padding-left: calc(1rem + env(safe-area-inset-left));
+  padding-right: calc(1rem + env(safe-area-inset-right));
+}
+
+.sidebar {
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  .page {
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+    padding-left: calc(1rem + env(safe-area-inset-left));
+    padding-right: calc(1rem + env(safe-area-inset-right));
+  }
+}
+
+/* Coarse pointers (finger, not mouse): the 28px icon buttons that are fine
+   with a cursor are below the ~44px comfortable tap target, so grow the hit
+   area on touch devices only rather than bloating the desktop layout. */
+@media (pointer: coarse) {
+  .icon-btn,
+  .password-toggle,
+  .sidebar-close-btn,
+  .mobile-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sidebar-link {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+/* Stop iOS zooming the page when a field is focused — it does that whenever
+   the font is under 16px. */
+@media (max-width: 900px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+body {
+  /* No rubber-band scroll chaining behind the off-canvas sidebar. */
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Very short windows (~500px and below) can't fit 10 links plus the footer
+   even at the minimum link padding — the nav ran into the user block. Trim
+   the footer's own chrome here so the two never overlap. */
+@media (max-height: 560px) {
+  .sidebar-link {
+    padding-top: 0.22rem;
+    padding-bottom: 0.22rem;
+    font-size: 0.83rem;
+  }
+
+  .sidebar-user,
+  .sidebar-theme-row {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .sidebar-brand-section {
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.45rem;
+  }
+}
+
+/* --- Short viewports --- */
+
+/* Small laptops (or a browser with devtools open) leave the auth card taller
+   than the screen. Compact it only here, so normal screens keep the roomier
+   spacing instead of everyone paying for the worst case. */
+@media (max-height: 680px) {
+  .auth-form-side {
+    padding: 0.7rem;
+  }
+
+  .auth-card {
+    padding: 0.85rem 1.25rem;
+  }
+
+  .auth-card .page-header {
+    margin-bottom: 0.4rem;
+  }
+
+  .auth-card .page-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .auth-card .page-header p {
+    font-size: 0.8rem;
+  }
+
+  .auth-card form {
+    gap: 0.32rem;
+  }
+
+  .auth-card label {
+    gap: 0.15rem;
+  }
+
+  .auth-card input {
+    padding: 0.38rem 0.7rem;
+  }
+
+  .auth-card form button[type="submit"],
+  .auth-card .btn-social {
+    padding: 0.5rem 1rem;
+  }
+
+  .social-auth-section {
+    margin-top: 0.5rem;
+  }
+
+  .social-divider {
+    margin-bottom: 0.5rem;
+  }
+
+  .social-auth-stack {
+    gap: 0.4rem;
+  }
+
+  .auth-footer-text {
+    margin-top: 0.5rem;
+  }
 }

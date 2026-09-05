@@ -30,6 +30,23 @@ export function IconTransactions(props) {
   );
 }
 
+export function IconChevronDown(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function IconCamera(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </svg>
+  );
+}
+
 export function IconLogout(props) {
   return (
     <svg {...base} {...props}>

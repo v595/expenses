@@ -11,7 +11,7 @@ const FACEBOOK_SDK_SRC = "https://connect.facebook.net/en_US/sdk.js";
 
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
       <path
         fill="#FFC107"
         d="M43.6 20.5h-1.6V20H24v8h11.3c-1.6 4.9-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
@@ -34,10 +34,10 @@ function GoogleIcon() {
 
 function FacebookIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
       <path
-        fill="#1877F2"
-        d="M24 12.07C24 5.4 18.6 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.89v2.25h3.32l-.53 3.49h-2.79V24C19.61 23.1 24 18.1 24 12.07z"
+        fill="#fff"
+        d="M22 12.07C22 6.51 17.52 2 12 2S2 6.51 2 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.02H7.9v-2.91h2.54V9.91c0-2.51 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.45 2.91h-2.33V22c4.78-.75 8.44-4.91 8.44-9.93z"
       />
     </svg>
   );
@@ -175,26 +175,31 @@ function SocialAuthButtons() {
   }
 
   return (
-    <div className="social-auth-stack">
-      <button
-        type="button"
-        className="btn-social"
-        onClick={handleGoogle}
-        disabled={loadingProvider === "google"}
-      >
-        <GoogleIcon />
-        {loadingProvider === "google" ? "Signing in..." : "Sign in with Google"}
-      </button>
-      <button
-        type="button"
-        className="btn-social"
-        onClick={handleFacebook}
-        disabled={loadingProvider === "facebook"}
-      >
-        <FacebookIcon />
-        {loadingProvider === "facebook" ? "Signing in..." : "Sign in with Facebook"}
-      </button>
-      {error && <p className="social-auth-notice">{error}</p>}
+    <div className="social-auth-section">
+      <div className="social-divider">
+        <span>or continue with</span>
+      </div>
+      <div className="social-auth-stack">
+        <button
+          type="button"
+          className="btn-social btn-social-google"
+          onClick={handleGoogle}
+          disabled={loadingProvider === "google"}
+        >
+          <GoogleIcon />
+          {loadingProvider === "google" ? "Signing in..." : "Sign in with Google"}
+        </button>
+        <button
+          type="button"
+          className="btn-social btn-social-facebook"
+          onClick={handleFacebook}
+          disabled={loadingProvider === "facebook"}
+        >
+          <FacebookIcon />
+          {loadingProvider === "facebook" ? "Signing in..." : "Continue with Facebook"}
+        </button>
+        {error && <p className="social-auth-notice">{error}</p>}
+      </div>
     </div>
   );
 }

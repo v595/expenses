@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import Avatar from "./Avatar";
 import { useAuth } from "../context/AuthContext";
@@ -10,7 +10,6 @@ import {
   IconBarChart,
   IconDashboard,
   IconFlag,
-  IconLogout,
   IconMenu,
   IconReceipt,
   IconRepeat,
@@ -18,7 +17,6 @@ import {
   IconTag,
   IconTarget,
   IconTransactions,
-  IconUser,
   IconWallet,
   IconWalletStack,
   IconX,
@@ -33,16 +31,10 @@ function BrandMark() {
 }
 
 function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-
-  async function handleLogout() {
-    await logout();
-    navigate("/login");
-  }
 
   if (!isAuthenticated) {
     return (
@@ -76,7 +68,9 @@ function Navbar() {
     { to: "/goals", label: "Goals", icon: IconFlag },
     { to: "/bills", label: "Bills", icon: IconReceipt },
     { to: "/categories", label: "Categories", icon: IconTag },
-    { to: "/profile", label: "Profile", icon: IconUser },
+    // No "Profile" row here on purpose — the avatar + name in the sidebar
+    // footer already links to /profile, so a text link would be a duplicate
+    // entry to the same page. Logout lives on the profile page itself.
     { to: "/settings", label: "Settings", icon: IconSettings },
   ];
 
@@ -144,10 +138,6 @@ function Navbar() {
             <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
             <ThemeSwitch theme={theme} onToggle={toggleTheme} />
           </div>
-          <button className="sidebar-logout" onClick={handleLogout}>
-            <IconLogout width={18} height={18} />
-            Logout
-          </button>
         </div>
       </aside>
     </>

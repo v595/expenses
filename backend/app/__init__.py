@@ -10,13 +10,19 @@ from app.routes.admin import admin_bp
 from app.routes.admin_dashboard import admin_dashboard_bp
 from app.routes.auth import auth_bp
 from app.routes.bills import bills_bp
+from app.routes.books import books_bp
 from app.routes.budgets import budgets_bp
+from app.routes.cashbook import cashbook_bp
 from app.routes.categories import categories_bp
 from app.routes.dashboard import dashboard_bp
 from app.routes.goals import goals_bp
 from app.routes.health import health_bp
+from app.routes.ledger import ledger_bp
 from app.routes.notifications import notifications_bp
+from app.routes.parties import parties_bp
+from app.routes.party_reports import party_reports_bp
 from app.routes.recurring import recurring_bp
+from app.routes.reminders import reminders_bp
 from app.routes.settings import settings_bp
 from app.routes.super_admin import super_admin_bp
 from app.routes.tags import tags_bp
@@ -103,6 +109,12 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(tags_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(books_bp)
+    app.register_blueprint(parties_bp)
+    app.register_blueprint(ledger_bp)
+    app.register_blueprint(reminders_bp)
+    app.register_blueprint(cashbook_bp)
+    app.register_blueprint(party_reports_bp)
 
     # Fallbacks so even unexpected errors come back as JSON, matching every
     # other response this API sends, instead of Flask's default HTML pages.

@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
 
+import { BILL_TYPE_OPTIONS, billTypeIcon } from "../components/billIcons";
 import { IconCheck, IconPlus, IconTrash } from "../components/icons";
+import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { createBill, deleteBill, getBills, payBill } from "../services/api";
+import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
+
+const REPEAT_OPTIONS = [
+  { value: "none", label: "Doesn't repeat" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
 
 const EMPTY_FORM = {
   name: "",
   amount: "",
   due_date: new Date().toISOString().slice(0, 10),
   repeat_frequency: "none",
+  bill_type: "",
 };
 
 function Bills() {
@@ -19,6 +30,19 @@ function Bills() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Choosing a type fills the name for you, unless you've typed your own.
+  function handleTypeChange(bill_type) {
+    const picked = BILL_TYPE_OPTIONS.find((t) => t.value === bill_type);
+    setForm((f) => ({
+      ...f,
+      bill_type,
+      name:
+        !f.name || BILL_TYPE_OPTIONS.some((t) => t.label === f.name)
+          ? picked?.label || ""
+          : f.name,
+    }));
+  }
 
   function refresh() {
     setLoading(true);
@@ -37,7 +61,7 @@ function Bills() {
     event.preventDefault();
     setError(null);
     try {
-      await createBill({ ...form, amount: Number(form.amount) }, token);
+      await createBill({ ...form, amount: toBase(form.amount, user.currency) }, token);
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -79,6 +103,16 @@ function Bills() {
       <form className="card card-padded transaction-form" onSubmit={handleSubmit}>
         <div className="form-row">
           <label>
+            Bill type
+            <Select
+              ariaLabel="Bill type"
+              placeholder="Choose a type"
+              value={form.bill_type}
+              onChange={handleTypeChange}
+              options={BILL_TYPE_OPTIONS}
+            />
+          </label>
+          <label>
             Name
             <input
               type="text"
@@ -112,15 +146,12 @@ function Bills() {
           </label>
           <label>
             Repeats
-            <select
+            <Select
+              ariaLabel="Repeat frequency"
               value={form.repeat_frequency}
-              onChange={(e) => setForm((f) => ({ ...f, repeat_frequency: e.target.value }))}
-            >
-              <option value="none">Doesn't repeat</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
+              onChange={(repeat_frequency) => setForm((f) => ({ ...f, repeat_frequency }))}
+              options={REPEAT_OPTIONS}
+            />
           </label>
         </div>
         <div className="form-actions">
@@ -156,7 +187,12 @@ function Bills() {
                   const overdue = !b.is_paid && b.due_date < today;
                   return (
                     <tr key={b.id}>
-                      <td>{b.name}</td>
+                      <td>
+                        <span className="bill-name-cell">
+                          <span className="bill-type-icon">{billTypeIcon(b.bill_type)}</span>
+                          {b.name}
+                        </span>
+                      </td>
                       <td className="amount-cell expense">{formatMoney(b.amount)}</td>
                       <td style={overdue ? { color: "var(--color-expense)", fontWeight: 600 } : undefined}>
                         {b.due_date}

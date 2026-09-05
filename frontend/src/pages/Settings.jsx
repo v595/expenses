@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { deleteAccountPermanently } from "../services/api";
+import Select from "../components/Select";
+import { FLAGS } from "../components/flags";
 import { CURRENCIES } from "../utils/currency";
 
 function Settings() {
@@ -64,16 +66,17 @@ function Settings() {
 
         <label>
           Currency
-          <select
+          <Select
+            ariaLabel="Currency"
             value={form.currency}
-            onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} — {c.label} ({c.symbol})
-              </option>
-            ))}
-          </select>
+            onChange={(currency) => setForm((f) => ({ ...f, currency }))}
+            options={CURRENCIES.map((c) => ({
+              value: c.code,
+              label: `${c.label} (${c.symbol})`,
+              hint: c.code,
+              icon: FLAGS[c.code],
+            }))}
+          />
         </label>
 
         <div className="settings-toggle-row">

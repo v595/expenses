@@ -21,8 +21,15 @@ def get_upcoming_unpaid(user_id, cutoff_date):
     return [b.to_dict() for b in rows]
 
 
-def create_bill(user_id, name, amount, due_date, repeat_frequency):
-    bill = Bill(user_id=user_id, name=name, amount=amount, due_date=due_date, repeat_frequency=repeat_frequency)
+def create_bill(user_id, name, amount, due_date, repeat_frequency, bill_type=None):
+    bill = Bill(
+        user_id=user_id,
+        name=name,
+        amount=amount,
+        due_date=due_date,
+        repeat_frequency=repeat_frequency,
+        bill_type=bill_type,
+    )
     db.session.add(bill)
     db.session.commit()
     return bill.to_dict()

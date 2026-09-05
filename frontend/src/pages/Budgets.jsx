@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { IconTrash } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { deleteBudget, getBudgets, setBudget } from "../services/api";
+import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 function Budgets() {
@@ -30,7 +31,7 @@ function Budgets() {
     event.preventDefault();
     setError(null);
     try {
-      await setBudget(form.category, Number(form.monthly_limit), token);
+      await setBudget(form.category, toBase(form.monthly_limit, user.currency), token);
       setForm({ category: "", monthly_limit: "" });
       await refresh();
     } catch (err) {
