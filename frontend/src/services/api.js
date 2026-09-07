@@ -88,6 +88,14 @@ export function getCurrentUser(token) {
   return request("/auth/me", { token });
 }
 
+export function requestPasswordReset(email) {
+  return request("/auth/forgot-password", { method: "POST", body: { email } });
+}
+
+export function resetPassword(token, password) {
+  return request("/auth/reset-password", { method: "POST", body: { token, password } });
+}
+
 export function logoutUser(token) {
   return request("/auth/logout", { method: "POST", token });
 }

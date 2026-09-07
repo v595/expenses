@@ -622,6 +622,7 @@ def system_settings():
         notice=notice,
         currencies=ALLOWED_CURRENCIES,
         messaging_status=admin_service.get_messaging_status(),
+        email_status=admin_service.get_email_status(),
     )
 
 
@@ -639,6 +640,7 @@ def send_test_notification():
         notice="Test notification sent — check the bell icon in the main app.",
         currencies=ALLOWED_CURRENCIES,
         messaging_status=admin_service.get_messaging_status(),
+        email_status=admin_service.get_email_status(),
     )
 
 

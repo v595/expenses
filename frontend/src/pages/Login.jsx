@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
@@ -9,13 +9,14 @@ import { useAuth } from "../context/AuthContext";
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
-  const [forgotNotice, setForgotNotice] = useState(false);
   // Set once the server says the password checked out but this account has
   // 2FA on — the form below swaps to a code-entry step for this ticket.
   const [twoFactorTicket, setTwoFactorTicket] = useState(null);
   const [code, setCode] = useState("");
   const { login, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const justResetPassword = Boolean(location.state?.passwordReset);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -88,6 +89,9 @@ function Login() {
           <h1>Welcome back</h1>
           <p>Log in to your account.</p>
         </div>
+        {justResetPassword && (
+          <p className="social-auth-notice">Password reset — log in with your new password.</p>
+        )}
         {error && <p className="error-message">{error}</p>}
         <form onSubmit={handleSubmit}>
           <label>
@@ -101,12 +105,9 @@ function Login() {
             onChange={handleChange}
             required
           />
-          <button type="button" className="link-btn" onClick={() => setForgotNotice(true)}>
+          <Link to="/forgot-password" className="link-btn">
             Forgot password?
-          </button>
-          {forgotNotice && (
-            <p className="social-auth-notice">Password reset isn't available yet.</p>
-          )}
+          </Link>
           <button type="submit">Login</button>
         </form>
         <SocialAuthButtons onRequiresTwoFactor={setTwoFactorTicket} />

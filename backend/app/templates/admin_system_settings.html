@@ -72,5 +72,36 @@
           {% endfor %}
         </tbody>
       </table>
+
+      <div class="profile-card-head" style="margin-top: 1.5rem;">
+        <h2 class="card-title" style="margin: 0 0 0.5rem;">Email driver</h2>
+      </div>
+      <p style="font-size: 0.76rem; color: var(--muted); margin: 0 0 0.6rem;">
+        Used for password-reset emails. "console" just logs the email instead of sending it —
+        set EMAIL_DRIVER=smtp and SMTP_HOST/SMTP_USER/SMTP_PASSWORD to send real mail.
+      </p>
+      <table style="width: 100%; font-size: 0.85rem;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 0.4rem 0; color: var(--muted); font-weight: 600;">Driver</th>
+            <th style="text-align: left; padding: 0.4rem 0; color: var(--muted); font-weight: 600;">Configured</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for driver in email_status.drivers %}
+          <tr>
+            <td style="padding: 0.4rem 0;">
+              {{ driver.name }}
+              {% if driver.is_active %}<span class="badge admin" style="margin-left: 0.4rem;">Active</span>{% endif %}
+            </td>
+            <td style="padding: 0.4rem 0;">
+              <span class="badge {{ 'online' if driver.is_configured else 'offline' }}">
+                <span class="status-dot"></span>{{ "Yes" if driver.is_configured else "No" }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 {% endblock %}

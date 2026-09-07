@@ -119,6 +119,30 @@ def login():
     return _session_response(result, "Logged in successfully")
 
 
+@auth_bp.route("/api/auth/forgot-password", methods=["POST"])
+@limiter.limit("5 per hour")
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    try:
+        auth_service.request_password_reset(data.get("email"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    # Same response whether or not the email is registered — see
+    # auth_service.request_password_reset for why.
+    return jsonify({"message": "If that email has an account, a reset link is on its way."}), 200
+
+
+@auth_bp.route("/api/auth/reset-password", methods=["POST"])
+@limiter.limit("10 per hour")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    try:
+        auth_service.reset_password(data.get("token"), data.get("password"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Password reset — you can log in with your new password now."}), 200
+
+
 @auth_bp.route("/api/auth/2fa/verify", methods=["POST"])
 @limiter.limit("10 per minute")
 def two_factor_verify():

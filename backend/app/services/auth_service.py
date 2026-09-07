@@ -1,3 +1,4 @@
+import hashlib
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,7 @@ from app.models import activity_log as activity_log_model
 from app.models import book as book_model
 from app.models import system_setting as system_setting_model
 from app.models import user as user_model
+from app.services import email as email_service
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD_LENGTH = 6
@@ -46,6 +48,37 @@ def verify_2fa_ticket(ticket):
     except (BadSignature, SignatureExpired):
         return None
     return data.get("user_id")
+
+
+# Password reset tokens are signed the same way as the 2FA ticket — stateless,
+# so no extra table/cleanup job — but with one addition: the token embeds a
+# short fingerprint of the user's *current* password hash. Once the password
+# actually changes (via this reset or any other path), the fingerprint no
+# longer matches, so the token stops verifying on its own. That gives
+# one-time-use semantics, and it means requesting a second reset email
+# silently invalidates the first, for free.
+_RESET_SALT = "password-reset"
+RESET_TOKEN_TTL_SECONDS = 30 * 60
+
+
+def _password_fingerprint(password_hash):
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+
+
+def issue_password_reset_token(user):
+    payload = {"user_id": user["id"], "pwd": _password_fingerprint(user["password_hash"])}
+    return _serializer().dumps(payload, salt=_RESET_SALT)
+
+
+def verify_password_reset_token(token):
+    try:
+        data = _serializer().loads(token, salt=_RESET_SALT, max_age=RESET_TOKEN_TTL_SECONDS)
+    except (BadSignature, SignatureExpired):
+        return None
+    user = user_model.get_user_by_id(data.get("user_id"))
+    if user is None or _password_fingerprint(user["password_hash"]) != data.get("pwd"):
+        return None
+    return user
 
 
 class AuthError(Exception):
@@ -165,6 +198,37 @@ def register(data):
 
     fresh = user_model.get_user_by_id(user["id"])
     return to_public_user(fresh), token
+
+
+def request_password_reset(email):
+    if not isinstance(email, str) or not EMAIL_PATTERN.match(email):
+        raise AuthError("A valid email is required", 400)
+
+    user = user_model.get_user_by_email(email.strip().lower())
+    # Deliberately silent for an unknown email or an account with no local
+    # password (social-only sign-in) — responding differently would let
+    # anyone probe which emails have an account here.
+    if user is not None and not user.get("is_suspended"):
+        token = issue_password_reset_token(user)
+        reset_url = f"{Config.FRONTEND_URL}/reset-password?token={token}"
+        subject, body = email_service.templates.password_reset_email(user["name"], reset_url)
+        email_service.send(user["email"], subject, body)
+        activity_log_model.log(user["id"], "Requested password reset", entity_type="security")
+
+
+def reset_password(token, new_password):
+    if not isinstance(new_password, str) or len(new_password) < MIN_PASSWORD_LENGTH:
+        raise AuthError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters", 400)
+
+    user = verify_password_reset_token(token) if isinstance(token, str) else None
+    if user is None:
+        raise AuthError("This reset link is invalid or has expired", 400)
+
+    user_model.update_password(user["id"], generate_password_hash(new_password))
+    # Force re-login everywhere — a password reset (often prompted by a
+    # compromised account) shouldn't leave an old session still valid.
+    user_model.set_user_token(user["id"], None)
+    activity_log_model.log(user["id"], "Reset password via email link", entity_type="security")
 
 
 def login(data):

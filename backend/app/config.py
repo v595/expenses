@@ -23,3 +23,8 @@ class Config:
     # dev, which allows every origin — matches this app's previous behavior
     # when run locally.
     CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+
+    # Where password-reset emails point back to. Defaults to the Vite dev
+    # server so the flow works locally with zero config; set this to the
+    # deployed frontend's origin (no trailing slash) in production.
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173").rstrip("/")

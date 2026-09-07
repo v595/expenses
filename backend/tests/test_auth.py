@@ -193,3 +193,77 @@ def test_two_factor_disable_requires_password_and_code(client):
     )
     assert disable.status_code == 200
     assert disable.get_json()["user"]["totp_enabled"] is False
+
+
+def _issue_reset_token(client, email="alice@example.com"):
+    """Test helper: mints a real reset token the way the email would carry
+    one, without going through the (logged, not sent) email driver."""
+    from app.models import user as user_model
+    from app.services import auth_service
+
+    with client.application.app_context():
+        user = user_model.get_user_by_email(email)
+        return auth_service.issue_password_reset_token(user)
+
+
+def test_forgot_password_unknown_email_returns_generic_message(client):
+    response = client.post("/api/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert response.status_code == 200
+    assert "reset link" in response.get_json()["message"]
+
+
+def test_forgot_password_known_email_returns_same_generic_message(client):
+    register(client)
+    response = client.post("/api/auth/forgot-password", json={"email": "alice@example.com"})
+    assert response.status_code == 200
+    assert "reset link" in response.get_json()["message"]
+
+
+def test_reset_password_invalid_token_rejected(client):
+    register(client)
+    response = client.post(
+        "/api/auth/reset-password", json={"token": "not-a-real-token", "password": "newsecret123"}
+    )
+    assert response.status_code == 400
+
+
+def test_reset_password_full_flow(client):
+    register(client)
+    token = _issue_reset_token(client)
+
+    response = client.post(
+        "/api/auth/reset-password", json={"token": token, "password": "newsecret123"}
+    )
+    assert response.status_code == 200
+
+    old_login = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "secret123"}
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "newsecret123"}
+    )
+    assert new_login.status_code == 200
+
+
+def test_reset_password_token_is_one_time_use(client):
+    register(client)
+    token = _issue_reset_token(client)
+
+    first = client.post(
+        "/api/auth/reset-password", json={"token": token, "password": "newsecret123"}
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/api/auth/reset-password", json={"token": token, "password": "anothersecret123"}
+    )
+    assert second.status_code == 400
+
+
+def test_reset_password_too_short_rejected(client):
+    register(client)
+    token = _issue_reset_token(client)
+    response = client.post("/api/auth/reset-password", json={"token": token, "password": "abc"})
+    assert response.status_code == 400

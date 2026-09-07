@@ -13,6 +13,7 @@ import Cashbook from "./pages/Cashbook";
 import Categories from "./pages/Categories";
 import Dashboard from "./pages/Dashboard";
 import DebtPayoff from "./pages/DebtPayoff";
+import ForgotPassword from "./pages/ForgotPassword";
 import Goals from "./pages/Goals";
 import Ledger from "./pages/Ledger";
 import Login from "./pages/Login";
@@ -21,6 +22,7 @@ import PartyDetail from "./pages/PartyDetail";
 import Profile from "./pages/Profile";
 import Recurring from "./pages/Recurring";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
@@ -164,6 +166,8 @@ function AppRoutes() {
       />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }

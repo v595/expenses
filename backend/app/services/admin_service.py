@@ -448,6 +448,12 @@ def get_messaging_status():
     return messaging.status()
 
 
+def get_email_status():
+    from app.services import email
+
+    return email.status()
+
+
 def get_system_health():
     """Only checks that can actually be verified against this app's real
     infrastructure — no fabricated CPU/memory/uptime metrics."""
