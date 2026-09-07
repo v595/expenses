@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import Avatar from "./Avatar";
 import { LogoMark } from "./Logo";
+import { useAppInfo } from "../context/AppInfoContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../hooks/useTheme";
 import NotificationBell from "./NotificationBell";
@@ -31,6 +32,7 @@ function BrandMark() {
 
 function Navbar() {
   const { user, isAuthenticated } = useAuth();
+  const { appName } = useAppInfo();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -40,7 +42,7 @@ function Navbar() {
       <nav className="public-nav">
         <Link to="/login" className="public-nav-brand">
           <BrandMark />
-          <span>Hisaab</span>
+          <span>{appName}</span>
         </Link>
         <div className="public-nav-links">
           <Link to="/login" className="nav-btn nav-btn-ghost">
@@ -89,7 +91,7 @@ function Navbar() {
         </button>
         <Link to="/" className="sidebar-brand">
           <BrandMark />
-          <span>Hisaab</span>
+          <span>{appName}</span>
         </Link>
         <span style={{ marginLeft: "auto" }}>
           <NotificationBell />

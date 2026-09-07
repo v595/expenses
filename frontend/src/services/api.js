@@ -23,10 +23,27 @@ async function request(path, { method = "GET", body, token } = {}) {
   }
 
   if (!response.ok) {
+    // A rejected token (expired, revoked, or from a wiped dev database) is
+    // different from every other failure: retrying or navigating elsewhere
+    // will 401 again on every subsequent call. Only fire for a request that
+    // actually carried a token — a bad-password login is also a 401, but
+    // that's a credentials problem, not a dead session, and must not log
+    // anyone out. AuthContext listens for this and clears the stale session
+    // so the app returns to the login screen instead of silently re-showing
+    // "Authentication required" on every page.
+    if (response.status === 401 && token) {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
     throw new Error(data.error || "Something went wrong");
   }
 
   return data;
+}
+
+// --- App info (public — no login required) ---
+
+export function getAppInfo() {
+  return request("/app-info");
 }
 
 // --- Auth ---
@@ -250,6 +267,10 @@ export function getAccounts(token) {
 
 export function getNetWorth(token) {
   return request("/accounts/net-worth", { token });
+}
+
+export function getFeatureFlags(token) {
+  return request("/feature-flags", { token });
 }
 
 export function createAccount(data, token) {

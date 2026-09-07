@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../context/AuthContext";
-import { getAccounts } from "../services/api";
+import { getAccounts, getFeatureFlags } from "../services/api";
 import { IconPlus, IconUpload } from "./icons";
+import DatePicker from "./DatePicker";
 import Select from "./Select";
 import { fromBase, toBase } from "../utils/fx";
 import { scanReceiptForAmount } from "../utils/ocrReceipt";
@@ -60,10 +61,14 @@ function TransactionForm({ initialValues, prefillValues, onSubmit, onCancel }) {
   );
   const [accounts, setAccounts] = useState([]);
   const [ocrStatus, setOcrStatus] = useState(null); // null | "scanning" | "found" | "not-found"
+  const [receiptScannerEnabled, setReceiptScannerEnabled] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     getAccounts(token).then(setAccounts).catch(() => {});
+    getFeatureFlags(token)
+      .then((flags) => setReceiptScannerEnabled(Boolean(flags.receipt_scanner)))
+      .catch(() => {});
   }, [token]);
 
   // A single change handler for every field, using the input's `name`
@@ -87,8 +92,9 @@ function TransactionForm({ initialValues, prefillValues, onSubmit, onCancel }) {
 
       // Only scan for an amount if the field is still empty — never
       // overwrite a number the user already typed or already reviewed.
+      // Also respects the receipt_scanner feature flag (admin kill switch).
       setForm((prev) => {
-        if (prev.amount) return prev;
+        if (prev.amount || !receiptScannerEnabled) return prev;
         setOcrStatus("scanning");
         scanReceiptForAmount(dataUrl).then((result) => {
           if (result.amount) {
@@ -163,7 +169,11 @@ function TransactionForm({ initialValues, prefillValues, onSubmit, onCancel }) {
 
         <label>
           Date
-          <input type="date" name="date" value={form.date} onChange={handleChange} required />
+          <DatePicker
+            ariaLabel="Transaction date"
+            value={form.date}
+            onChange={(date) => handleChange({ target: { name: "date", value: date } })}
+          />
         </label>
       </div>
 

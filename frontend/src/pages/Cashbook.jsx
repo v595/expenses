@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import DatePicker from "../components/DatePicker";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { getBooks, getCashbook } from "../services/api";
@@ -15,6 +16,7 @@ function Cashbook() {
   const [cashbook, setCashbook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const toDateRef = useRef(null);
 
   useEffect(() => {
     getBooks(token)
@@ -62,18 +64,22 @@ function Cashbook() {
         </label>
         <label>
           From
-          <input
-            type="date"
+          <DatePicker
+            ariaLabel="From date"
             value={range.start_date}
-            onChange={(e) => setRange((r) => ({ ...r, start_date: e.target.value }))}
+            onChange={(date) => {
+              setRange((r) => ({ ...r, start_date: date }));
+              toDateRef.current?.open();
+            }}
           />
         </label>
         <label>
           To
-          <input
-            type="date"
+          <DatePicker
+            ref={toDateRef}
+            ariaLabel="To date"
             value={range.end_date}
-            onChange={(e) => setRange((r) => ({ ...r, end_date: e.target.value }))}
+            onChange={(date) => setRange((r) => ({ ...r, end_date: date }))}
           />
         </label>
         <button type="button" className="btn-secondary" onClick={refresh}>

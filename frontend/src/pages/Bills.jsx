@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { BILL_TYPE_OPTIONS, billTypeIcon } from "../components/billIcons";
 import { IconCheck, IconEdit, IconPlus, IconTrash } from "../components/icons";
+import DatePicker from "../components/DatePicker";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { createBill, deleteBill, getBills, payBill, updateBill } from "../services/api";
@@ -161,11 +162,10 @@ function Bills() {
         <div className="form-row">
           <label>
             Due Date
-            <input
-              type="date"
+            <DatePicker
+              ariaLabel="Bill due date"
               value={form.due_date}
-              onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-              required
+              onChange={(date) => setForm((f) => ({ ...f, due_date: date }))}
             />
           </label>
           <label>

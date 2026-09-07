@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import { AppInfoProvider } from "./context/AppInfoContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { logPageView } from "./services/api";
 import { loadRates } from "./utils/fx";
@@ -215,9 +216,11 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Layout />
-      </AuthProvider>
+      <AppInfoProvider>
+        <AuthProvider>
+          <Layout />
+        </AuthProvider>
+      </AppInfoProvider>
     </BrowserRouter>
   );
 }

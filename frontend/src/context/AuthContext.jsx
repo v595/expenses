@@ -32,6 +32,27 @@ export function AuthProvider({ children }) {
     setAuth({ token, user });
   }
 
+  function clearSession() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setAuth({ token: null, user: null });
+  }
+
+  // A dead token (expired, revoked, or pointing at a user that no longer
+  // exists) used to leave the app "logged in" — the token stayed cached, so
+  // every page kept fetching, kept getting 401 "Authentication required",
+  // and kept showing that same error banner with no way out but a manual
+  // logout. api.js fires this event the moment any authenticated request
+  // gets rejected; clearing the session here sends the user back to /login
+  // (via RequireAuth) instead of leaving them stuck.
+  useEffect(() => {
+    function onUnauthorized() {
+      clearSession();
+    }
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
+  }, []);
+
   // The stored user is a snapshot from whenever you last logged in, so any
   // field changed server-side since then (currency, name, admin flag, whether
   // the account was suspended) stayed stale until the next login — which is
@@ -110,9 +131,7 @@ export function AuthProvider({ children }) {
     if (token) {
       await logoutUser(token).catch(() => {}); // best-effort; log out locally regardless
     }
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setAuth({ token: null, user: null });
+    clearSession();
   }
 
   async function updateProfile(data) {

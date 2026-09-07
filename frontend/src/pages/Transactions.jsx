@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { IconDownload, IconSearch, IconUpload } from "../components/icons";
+import DatePicker from "../components/DatePicker";
 import Select from "../components/Select";
 import SplitExpenseForm from "../components/SplitExpenseForm";
 import TransactionForm from "../components/TransactionForm";
@@ -38,6 +39,7 @@ function Transactions() {
   const [importing, setImporting] = useState(false);
   const [importSummary, setImportSummary] = useState(null);
   const fileInputRef = useRef(null);
+  const endDateRef = useRef(null);
 
   function refresh() {
     setLoading(true);
@@ -241,11 +243,23 @@ function Transactions() {
         </div>
         <div className="filter-field">
           <label>From</label>
-          <input type="date" name="start_date" value={filters.start_date} onChange={handleFilterChange} />
+          <DatePicker
+            ariaLabel="From date"
+            value={filters.start_date}
+            onChange={(date) => {
+              handleFilterChange({ target: { name: "start_date", value: date } });
+              endDateRef.current?.open();
+            }}
+          />
         </div>
         <div className="filter-field">
           <label>To</label>
-          <input type="date" name="end_date" value={filters.end_date} onChange={handleFilterChange} />
+          <DatePicker
+            ref={endDateRef}
+            ariaLabel="To date"
+            value={filters.end_date}
+            onChange={(date) => handleFilterChange({ target: { name: "end_date", value: date } })}
+          />
         </div>
         {tags.length > 0 && (
           <div className="filter-field">

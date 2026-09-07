@@ -146,11 +146,12 @@ h1, h2, h3 {
   top: 0;
   left: 0;
   bottom: 0;
-  /* Never scrolls. Rather than relying on fixed spacing that happens to fit a
-     tall window, every vertical gap here is tied to viewport height with
-     clamp(), so the nav compresses on short screens instead of overflowing.
-     The clamp minimums keep all 10 links + brand + footer inside roughly
-     470px, comfortably under any real browser window. */
+  /* The sidebar itself never scrolls — every vertical gap here is tied to
+     viewport height with clamp(), so the nav compresses on short screens
+     instead of overflowing. Brand and footer are fixed-size; .sidebar-nav
+     (the link list) is the one part that can still outgrow the space left
+     for it as more links are added, so it scrolls internally rather than
+     spilling into and overlapping the footer below it. */
   overflow: hidden;
   padding: clamp(0.75rem, 2vh, 1.5rem) 1rem;
 }
@@ -228,7 +229,7 @@ h1, h2, h3 {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: clamp(0.1rem, 0.55vh, 0.35rem);
+  gap: clamp(0.05rem, 0.4vh, 0.3rem);
   /* Stretches so the user block + theme toggle stay pinned to the bottom.
      space-between then shares whatever height is left over evenly between
      the links instead of letting it pool into one dead gap above the footer,
@@ -237,17 +238,32 @@ h1, h2, h3 {
   flex: 1;
   min-height: 0;
   justify-content: space-between;
+  /* 13 links no longer fit at any padding on genuinely short/narrow windows
+     even at the clamp() minimum below — rather than let them spill out of
+     this box and overlap the footer (which sits right after in the flow),
+     scroll the overflow inside the nav itself. The footer's position is then
+     never affected by how many links exist, now or later. */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
+
+.sidebar-nav::-webkit-scrollbar { width: 5px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  flex-shrink: 0;
   /* Scales with viewport height so links are roomy on a tall window and
      compact on a short one. The negative offset makes them shrink away
      quickly below ~700px tall, which is what stops the nav overflowing into
-     the footer; plain `vh` fell off too slowly and collided. */
-  padding: clamp(0.3rem, calc(-0.9rem + 3.6vh), 0.95rem) 0.75rem;
+     the footer; plain `vh` fell off too slowly and collided. Below the clamp
+     minimum, .sidebar-nav's own overflow-y takes over instead of collapsing
+     links further or overlapping the footer. */
+  padding: clamp(0.22rem, calc(-0.9rem + 3.6vh), 0.95rem) 0.75rem;
   border-radius: var(--radius-md);
   color: var(--color-sidebar-text);
   text-decoration: none;
@@ -519,20 +535,24 @@ textarea {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  transition: border-color 0.15s, border-width 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 input:hover:not(:disabled),
 select:hover:not(:disabled),
 textarea:hover:not(:disabled) {
-  border-color: var(--color-text-muted);
+  border-width: 2px;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
+  border-width: 2px;
   border-color: var(--color-primary);
+  background: var(--color-surface);
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.14);
 }
 
@@ -654,6 +674,8 @@ button.btn-secondary {
 
 button.btn-secondary:hover {
   background: var(--color-bg);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   box-shadow: none;
 }
 
@@ -664,8 +686,8 @@ button.btn-icon {
 }
 
 button.btn-icon:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   transform: none;
   box-shadow: none;
 }
@@ -1645,12 +1667,13 @@ button.btn-danger:hover {
   font-family: inherit;
   text-align: left;
   box-shadow: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, border-width 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .select-trigger:hover:not(:disabled) {
-  background: var(--color-surface);
-  border-color: var(--color-text-muted);
+  background: var(--color-primary-soft);
+  border-width: 2px;
+  border-color: var(--color-primary);
   transform: none;
   box-shadow: none;
 }
@@ -1781,6 +1804,212 @@ button.btn-danger:hover {
 
 .select-option.is-selected .select-option-hint {
   margin-left: auto;
+}
+
+/* --- Custom date picker --- */
+
+.datepicker {
+  position: relative;
+  width: 100%;
+}
+
+.datepicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.15s, border-width 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.datepicker-trigger:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  border-width: 2px;
+  border-color: var(--color-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-trigger:focus-visible,
+.datepicker-open .datepicker-trigger {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.14);
+}
+
+.datepicker-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.datepicker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datepicker-placeholder {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.datepicker-panel {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 272px;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 28px rgba(23, 23, 23, 0.14), 0 2px 6px rgba(23, 23, 23, 0.06);
+  animation: select-in 0.12s ease-out;
+}
+
+:root[data-theme="dark"] .datepicker-panel {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+.datepicker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.datepicker-month {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.datepicker-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-nav:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.2rem;
+}
+
+.datepicker-weekdays span {
+  display: block;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding: 0.2rem 0;
+}
+
+.datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  outline: none;
+}
+
+.datepicker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-day:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-day.is-outside {
+  color: var(--color-text-muted);
+  opacity: 0.45;
+}
+
+.datepicker-day.is-today {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.datepicker-day.is-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.datepicker-day.is-selected {
+  background: var(--gradient-brand);
+  color: white;
+  font-weight: 700;
+}
+
+.datepicker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.datepicker-quick {
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transform: none;
+  box-shadow: none;
+}
+
+.datepicker-quick:hover {
+  background: var(--color-primary-soft);
+  transform: none;
+  box-shadow: none;
 }
 
 .flag {
@@ -2495,9 +2724,10 @@ body {
   }
 }
 
-/* Very short windows (~500px and below) can't fit 10 links plus the footer
-   even at the minimum link padding — the nav ran into the user block. Trim
-   the footer's own chrome here so the two never overlap. */
+/* Very short windows (~500px and below) can't fit all the nav links plus the
+   footer even at the minimum link padding — .sidebar-nav's own overflow-y
+   handles the links themselves, but the footer's chrome still needs
+   trimming here so it doesn't eat into what little space is left. */
 @media (max-height: 560px) {
   .sidebar-link {
     padding-top: 0.22rem;

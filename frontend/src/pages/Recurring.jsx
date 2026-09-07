@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { IconEdit, IconPlus, IconTrash } from "../components/icons";
+import DatePicker from "../components/DatePicker";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { createRecurring, deleteRecurring, getRecurring, updateRecurring } from "../services/api";
@@ -158,12 +159,10 @@ function Recurring() {
         <div className="form-row">
           <label>
             Starts On
-            <input
-              type="date"
-              name="start_date"
+            <DatePicker
+              ariaLabel="Start date"
               value={form.start_date}
-              onChange={handleChange}
-              required
+              onChange={(date) => handleChange({ target: { name: "start_date", value: date } })}
             />
           </label>
           <label>

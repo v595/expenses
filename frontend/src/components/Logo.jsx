@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 // Brand mark: three ascending bars that read as an "H" for Hisaab, with the
 // crossbar doubling as a ledger rule. Bars = the spending/growth idea, the
 // rule = the khaata line items are written on.
@@ -7,6 +9,14 @@
 // coloured backgrounds — e.g. white-on-red in the auth hero.
 
 export function LogoMark({ size = 30, tile = true, className }) {
+  // The gradient needs a unique id per instance — this renders more than once
+  // at a time (mobile topbar + sidebar, or the auth hero + nothing else, but
+  // never guaranteed to be alone). A shared hardcoded id meant every fill="url(#…)"
+  // resolved to whichever copy happened to be first in the DOM; when that first
+  // copy sat inside a `display: none` ancestor (e.g. the mobile topbar hidden at
+  // desktop widths), the reference broke and EVERY instance — including visible
+  // ones — lost its red tile and rendered as plain unfilled bars.
+  const gradientId = `hisaab-tile-${useId()}`;
   const bars = (
     <>
       <rect x="17" y="30" width="7" height="18" rx="3.5" opacity="0.72" />
@@ -25,10 +35,10 @@ export function LogoMark({ size = 30, tile = true, className }) {
       role="img"
       aria-label="Hisaab"
     >
-      {tile && <rect width="64" height="64" rx="16" fill="url(#hisaab-tile)" />}
+      {tile && <rect width="64" height="64" rx="16" fill={`url(#${gradientId})`} />}
       {tile && (
         <defs>
-          <linearGradient id="hisaab-tile" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#ef4444" />
             <stop offset="100%" stopColor="#b91c1c" />
           </linearGradient>

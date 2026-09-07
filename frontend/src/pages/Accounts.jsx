@@ -4,7 +4,7 @@ import { IconPlus, IconTrash, IconTrendingUp, IconWalletStack } from "../compone
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { ALL_ACCOUNT_SOURCES } from "../data/banks";
-import { createAccount, deleteAccount, getAccounts, getNetWorth } from "../services/api";
+import { createAccount, deleteAccount, getAccounts, getFeatureFlags, getNetWorth } from "../services/api";
 import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
@@ -62,10 +62,16 @@ function Accounts() {
 
   function refresh() {
     setLoading(true);
-    return Promise.all([getAccounts(token), getNetWorth(token)])
-      .then(([accountsData, netWorthData]) => {
+    return Promise.all([getAccounts(token), getFeatureFlags(token).catch(() => ({}))])
+      .then(([accountsData, flags]) => {
         setAccounts(accountsData);
-        setNetWorth(netWorthData);
+        // Net worth is behind its own flag (admin-controlled kill switch) —
+        // skip the call entirely when it's off instead of letting a 404
+        // from it take down the accounts list too.
+        if (flags.net_worth) {
+          return getNetWorth(token).then(setNetWorth);
+        }
+        setNetWorth(null);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));

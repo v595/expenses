@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { IconEdit, IconPlus, IconTrash } from "../components/icons";
+import DatePicker from "../components/DatePicker";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -217,20 +218,19 @@ function PartyDetail() {
         <div className="form-row">
           <label>
             Date
-            <input
-              type="date"
+            <DatePicker
+              ariaLabel="Entry date"
               value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              required
+              onChange={(date) => setForm((f) => ({ ...f, date }))}
             />
           </label>
           <label>
             Due Date
-            <input
-              type="date"
-              value={form.due_date}
-              onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
+            <DatePicker
+              ariaLabel="Due date"
               placeholder="Optional"
+              value={form.due_date}
+              onChange={(date) => setForm((f) => ({ ...f, due_date: date }))}
             />
           </label>
         </div>

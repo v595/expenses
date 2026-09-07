@@ -1,5 +1,6 @@
 import { IconCheck, IconTrendingDown, IconTrendingUp } from "./icons";
 import { LogoMark } from "./Logo";
+import { useAppInfo } from "../context/AppInfoContext";
 
 const FEATURES = [
   "Track every income & expense in seconds",
@@ -9,6 +10,7 @@ const FEATURES = [
 ];
 
 function AuthLayout({ children }) {
+  const { appName } = useAppInfo();
   return (
     <div className="auth-page">
       <div className="auth-visual">
@@ -18,7 +20,7 @@ function AuthLayout({ children }) {
         <div className="auth-visual-content">
           <div className="auth-visual-brand">
             <LogoMark size={30} tile={false} />
-            Hisaab
+            {appName}
           </div>
 
           <div className="auth-visual-copy">

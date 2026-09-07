@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { IconEdit, IconFlag, IconPlus, IconTrash } from "../components/icons";
+import DatePicker from "../components/DatePicker";
 import { useAuth } from "../context/AuthContext";
 import { addGoalFunds, createGoal, deleteGoal, getGoals, updateGoal } from "../services/api";
 import { fromBase, toBase } from "../utils/fx";
@@ -125,10 +126,10 @@ function Goals() {
           </label>
           <label>
             Target Date
-            <input
-              type="date"
+            <DatePicker
+              ariaLabel="Goal target date"
               value={form.target_date}
-              onChange={(e) => setForm((f) => ({ ...f, target_date: e.target.value }))}
+              onChange={(date) => setForm((f) => ({ ...f, target_date: date }))}
             />
           </label>
         </div>
