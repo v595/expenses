@@ -70,6 +70,11 @@ class User(db.Model):
     last_login_at = db.Column(db.Text)
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"))
     is_suspended = db.Column(db.Boolean, nullable=False, default=False)
+    token_expires_at = db.Column(db.Text)
+    failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.Text)
+    totp_secret = db.Column(db.Text)
+    totp_enabled = db.Column(db.Boolean, nullable=False, default=False)
 
     role = db.relationship("Role")
 
@@ -90,6 +95,11 @@ class User(db.Model):
             "role_id": self.role_id,
             "role_name": self.role.name if self.role is not None else None,
             "is_suspended": self.is_suspended,
+            "token_expires_at": self.token_expires_at,
+            "failed_login_attempts": self.failed_login_attempts,
+            "locked_until": self.locked_until,
+            "totp_secret": self.totp_secret,
+            "totp_enabled": self.totp_enabled,
         }
 
 
@@ -190,7 +200,32 @@ class Budget(db.Model):
     monthly_limit = db.Column(db.Float, nullable=False)
 
     def to_dict(self):
-        return {"category": self.category, "monthly_limit": self.monthly_limit}
+        return {"id": self.id, "category": self.category, "monthly_limit": self.monthly_limit}
+
+
+class BudgetShare(db.Model):
+    """Grants a second user read-only visibility into one of the owner's
+    budgets (their spending progress against the category limit) — e.g. a
+    couple or roommates keeping an eye on a shared household category
+    without either of them owning the other's data."""
+
+    __tablename__ = "budget_shares"
+    __table_args__ = (db.UniqueConstraint("budget_id", "shared_with_user_id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    budget_id = db.Column(db.Integer, db.ForeignKey("budgets.id"), nullable=False)
+    owner_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    shared_with_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "budget_id": self.budget_id,
+            "owner_user_id": self.owner_user_id,
+            "shared_with_user_id": self.shared_with_user_id,
+            "created_at": self.created_at,
+        }
 
 
 class RecurringTransaction(db.Model):
@@ -241,6 +276,33 @@ class Goal(db.Model):
             "target_amount": self.target_amount,
             "current_amount": self.current_amount,
             "target_date": self.target_date,
+            "created_at": self.created_at,
+        }
+
+
+class Debt(db.Model):
+    """A loan/credit-card balance tracked for payoff planning (snowball /
+    avalanche) — separate from Bill, which is a recurring/one-off payment
+    obligation rather than a balance carried over time with interest."""
+
+    __tablename__ = "debts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    balance = db.Column(db.Float, nullable=False)
+    interest_rate = db.Column(db.Float, nullable=False, default=0)  # annual %, e.g. 18.5
+    min_payment = db.Column(db.Float, nullable=False, default=0)
+    created_at = db.Column(db.Text, nullable=False, default=now_iso)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "balance": self.balance,
+            "interest_rate": self.interest_rate,
+            "min_payment": self.min_payment,
             "created_at": self.created_at,
         }
 

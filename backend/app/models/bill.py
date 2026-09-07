@@ -35,6 +35,19 @@ def create_bill(user_id, name, amount, due_date, repeat_frequency, bill_type=Non
     return bill.to_dict()
 
 
+def update_bill(bill_id, user_id, name, amount, due_date, repeat_frequency, bill_type):
+    bill = db.session.query(Bill).filter_by(id=bill_id, user_id=user_id).first()
+    if bill is None:
+        return None
+    bill.name = name
+    bill.amount = amount
+    bill.due_date = due_date
+    bill.repeat_frequency = repeat_frequency
+    bill.bill_type = bill_type
+    db.session.commit()
+    return bill.to_dict()
+
+
 def mark_paid(bill_id, user_id):
     bill = db.session.query(Bill).filter_by(id=bill_id, user_id=user_id).first()
     if bill is None:

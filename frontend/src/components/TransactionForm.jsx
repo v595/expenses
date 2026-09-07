@@ -5,6 +5,7 @@ import { getAccounts } from "../services/api";
 import { IconPlus, IconUpload } from "./icons";
 import Select from "./Select";
 import { fromBase, toBase } from "../utils/fx";
+import { scanReceiptForAmount } from "../utils/ocrReceipt";
 
 const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
 
@@ -45,12 +46,20 @@ function round2(n) {
 }
 
 // initialValues lets this same form be reused for both "add" and "edit".
-// onSubmit is a callback prop — the parent decides what actually happens
-// with the data (in Phase 6: log it; in Phase 7: send it to the API).
-function TransactionForm({ initialValues, onSubmit, onCancel }) {
+// prefillValues seeds the "add" form (e.g. from a parsed bank SMS or a
+// receipt scan) without switching it into edit mode — it's already in the
+// currency shown on screen, unlike initialValues which is stored/base
+// currency. onSubmit is a callback prop — the parent decides what actually
+// happens with the data (in Phase 6: log it; in Phase 7: send it to the API).
+function TransactionForm({ initialValues, prefillValues, onSubmit, onCancel }) {
   const { token, user } = useAuth();
-  const [form, setForm] = useState(() => toFormValues(initialValues, user?.currency));
+  const [form, setForm] = useState(() =>
+    initialValues
+      ? toFormValues(initialValues, user?.currency)
+      : { ...emptyForm(), ...prefillValues }
+  );
   const [accounts, setAccounts] = useState([]);
+  const [ocrStatus, setOcrStatus] = useState(null); // null | "scanning" | "found" | "not-found"
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -70,8 +79,28 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
     if (!file.type.startsWith("image/")) return;
     if (file.size > MAX_RECEIPT_BYTES) return;
 
+    setOcrStatus(null);
     const reader = new FileReader();
-    reader.onload = () => setForm((prev) => ({ ...prev, receipt: reader.result }));
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      setForm((prev) => ({ ...prev, receipt: dataUrl }));
+
+      // Only scan for an amount if the field is still empty — never
+      // overwrite a number the user already typed or already reviewed.
+      setForm((prev) => {
+        if (prev.amount) return prev;
+        setOcrStatus("scanning");
+        scanReceiptForAmount(dataUrl).then((result) => {
+          if (result.amount) {
+            setForm((f) => (f.amount ? f : { ...f, amount: String(result.amount) }));
+            setOcrStatus("found");
+          } else {
+            setOcrStatus("not-found");
+          }
+        });
+        return prev;
+      });
+    };
     reader.readAsDataURL(file);
   }
 
@@ -193,6 +222,21 @@ function TransactionForm({ initialValues, onSubmit, onCancel }) {
             <img src={form.receipt} alt="Receipt preview" className="receipt-thumb" />
           )}
         </div>
+        {ocrStatus === "scanning" && (
+          <p className="loading-state" style={{ marginTop: "0.4rem" }}>
+            Scanning receipt for the amount...
+          </p>
+        )}
+        {ocrStatus === "found" && (
+          <p className="success-message" style={{ marginTop: "0.4rem" }}>
+            Found an amount on the receipt — double-check it above before saving.
+          </p>
+        )}
+        {ocrStatus === "not-found" && (
+          <p style={{ marginTop: "0.4rem", fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+            Couldn't read an amount off the receipt — enter it above.
+          </p>
+        )}
       </label>
 
       <div className="form-actions">

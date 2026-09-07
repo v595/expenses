@@ -22,6 +22,16 @@ def create_bill():
     return jsonify({"message": "Bill created", "bill": bill}), 201
 
 
+@bills_bp.route("/api/bills/<int:bill_id>", methods=["PUT"])
+@login_required
+def update_bill(bill_id):
+    try:
+        bill = bill_service.update_bill(bill_id, g.current_user["id"], request.get_json(silent=True))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "Bill updated", "bill": bill}), 200
+
+
 @bills_bp.route("/api/bills/<int:bill_id>/pay", methods=["POST"])
 @login_required
 def pay_bill(bill_id):

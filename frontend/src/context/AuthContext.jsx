@@ -10,6 +10,7 @@ import {
   registerUser,
   updateProfile as apiUpdateProfile,
   updateSettings as apiUpdateSettings,
+  verifyTwoFactor as apiVerifyTwoFactor,
 } from "../services/api";
 
 const AuthContext = createContext(null);
@@ -55,9 +56,24 @@ export function AuthProvider({ children }) {
     };
   }, [token]);
 
+  // Every login path can come back either as a completed session (token +
+  // user) or, when the account has 2FA turned on, a { requires_two_factor,
+  // ticket } stub — the caller (Login page) shows a code-entry step and
+  // finishes with verifyTwoFactor(ticket, code) instead of persisting here.
+  function settleSession(data) {
+    if (data.requires_two_factor) return data;
+    persist(data.token, data.user);
+    return data;
+  }
+
+  async function verifyTwoFactor(ticket, code) {
+    const data = await apiVerifyTwoFactor(ticket, code);
+    return settleSession(data);
+  }
+
   async function loginWithFirebaseToken(idToken) {
     const data = await apiLoginWithFirebase(idToken);
-    persist(data.token, data.user);
+    return settleSession(data);
   }
 
   // Email/password always goes through this app's own backend, never Firebase,
@@ -72,22 +88,22 @@ export function AuthProvider({ children }) {
   // writes to our DB, which would not be the store Firebase checked.
   async function login(email, password) {
     const data = await loginUser({ email, password });
-    persist(data.token, data.user);
+    return settleSession(data);
   }
 
   async function register(name, email, password) {
     const data = await registerUser({ name, email, password });
-    persist(data.token, data.user);
+    return settleSession(data);
   }
 
   async function loginWithGoogle(accessToken) {
     const data = await apiLoginWithGoogle(accessToken);
-    persist(data.token, data.user);
+    return settleSession(data);
   }
 
   async function loginWithFacebook(accessToken) {
     const data = await apiLoginWithFacebook(accessToken);
-    persist(data.token, data.user);
+    return settleSession(data);
   }
 
   async function logout() {
@@ -113,6 +129,13 @@ export function AuthProvider({ children }) {
     return result;
   }
 
+  // For flows that update the user server-side outside updateProfile/Settings
+  // (e.g. enabling/disabling 2FA) but still need the cached user refreshed.
+  function setUser(nextUser) {
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    setAuth((prev) => ({ ...prev, user: nextUser }));
+  }
+
   const value = {
     token,
     user,
@@ -122,9 +145,11 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     loginWithFacebook,
     loginWithFirebaseToken,
+    verifyTwoFactor,
     logout,
     updateProfile,
     updateSettings,
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

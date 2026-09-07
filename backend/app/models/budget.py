@@ -7,6 +7,11 @@ def get_budgets_by_user(user_id):
     return [b.to_dict() for b in rows]
 
 
+def get_budget_by_user_and_category(user_id, category):
+    budget = db.session.query(Budget).filter_by(user_id=user_id, category=category).first()
+    return budget.to_dict() if budget else None
+
+
 def upsert_budget(user_id, category, monthly_limit):
     budget = db.session.query(Budget).filter_by(user_id=user_id, category=category).first()
     if budget is None:

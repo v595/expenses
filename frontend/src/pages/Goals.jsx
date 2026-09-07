@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { IconFlag, IconPlus, IconTrash } from "../components/icons";
+import { IconEdit, IconFlag, IconPlus, IconTrash } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { addGoalFunds, createGoal, deleteGoal, getGoals } from "../services/api";
-import { toBase } from "../utils/fx";
+import { addGoalFunds, createGoal, deleteGoal, getGoals, updateGoal } from "../services/api";
+import { fromBase, toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const EMPTY_FORM = { name: "", target_amount: "", target_date: "" };
@@ -16,6 +16,7 @@ function Goals() {
   const [addAmounts, setAddAmounts] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null); // null = "add" mode
 
   function refresh() {
     setLoading(true);
@@ -30,18 +31,35 @@ function Goals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  function handleEdit(goal) {
+    setEditingId(goal.id);
+    setForm({
+      name: goal.name,
+      target_amount: fromBase(goal.target_amount, user.currency),
+      target_date: goal.target_date || "",
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     try {
-      await createGoal(
-        {
-          ...form,
-          target_amount: toBase(form.target_amount, user.currency),
-          target_date: form.target_date || null,
-        },
-        token
-      );
+      const payload = {
+        ...form,
+        target_amount: toBase(form.target_amount, user.currency),
+        target_date: form.target_date || null,
+      };
+      if (editingId) {
+        await updateGoal(editingId, payload, token);
+        setEditingId(null);
+      } else {
+        await createGoal(payload, token);
+      }
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -66,6 +84,7 @@ function Goals() {
     setError(null);
     try {
       await deleteGoal(id, token);
+      if (editingId === id) handleCancelEdit();
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -116,8 +135,13 @@ function Goals() {
         <div className="form-actions">
           <button type="submit">
             <IconPlus width={16} height={16} />
-            Add Goal
+            {editingId ? "Save Changes" : "Add Goal"}
           </button>
+          {editingId && (
+            <button type="button" className="link-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
         </div>
       </form>
 
@@ -140,6 +164,14 @@ function Goals() {
                     <IconFlag width={13} height={13} />
                     {g.target_date || "No deadline"}
                   </span>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    onClick={() => handleEdit(g)}
+                    aria-label={`Edit ${g.name}`}
+                  >
+                    <IconEdit width={15} height={15} />
+                  </button>
                   <button
                     type="button"
                     className="btn-icon danger"

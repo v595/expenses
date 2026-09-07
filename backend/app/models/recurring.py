@@ -44,6 +44,20 @@ def update_next_date(recurring_id, next_date):
     db.session.commit()
 
 
+def update_recurring(recurring_id, user_id, amount, type_, category, description, frequency, next_date):
+    recurring = db.session.query(RecurringTransaction).filter_by(id=recurring_id, user_id=user_id).first()
+    if recurring is None:
+        return None
+    recurring.amount = amount
+    recurring.type = type_
+    recurring.category = category
+    recurring.description = description
+    recurring.frequency = frequency
+    recurring.next_date = next_date
+    db.session.commit()
+    return recurring.to_dict()
+
+
 def delete_recurring(recurring_id, user_id):
     db.session.query(RecurringTransaction).filter_by(id=recurring_id, user_id=user_id).delete()
     db.session.commit()

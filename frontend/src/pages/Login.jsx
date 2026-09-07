@@ -10,7 +10,11 @@ function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
   const [forgotNotice, setForgotNotice] = useState(false);
-  const { login } = useAuth();
+  // Set once the server says the password checked out but this account has
+  // 2FA on — the form below swaps to a code-entry step for this ticket.
+  const [twoFactorTicket, setTwoFactorTicket] = useState(null);
+  const [code, setCode] = useState("");
+  const { login, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
 
   function handleChange(event) {
@@ -22,11 +26,59 @@ function Login() {
     event.preventDefault();
     setError(null);
     try {
-      await login(form.email, form.password);
+      const result = await login(form.email, form.password);
+      if (result.requires_two_factor) {
+        setTwoFactorTicket(result.ticket);
+        return;
+      }
       navigate("/transactions");
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function handleVerifyCode(event) {
+    event.preventDefault();
+    setError(null);
+    try {
+      await verifyTwoFactor(twoFactorTicket, code);
+      navigate("/transactions");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (twoFactorTicket) {
+    return (
+      <AuthLayout>
+        <div className="card card-padded auth-card">
+          <div className="page-header">
+            <h1>Two-factor code</h1>
+            <p>Enter the 6-digit code from your authenticator app.</p>
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          <form onSubmit={handleVerifyCode}>
+            <label>
+              Code
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                maxLength={6}
+                autoFocus
+                required
+              />
+            </label>
+            <button type="submit">Verify</button>
+          </form>
+          <button type="button" className="link-btn" onClick={() => setTwoFactorTicket(null)}>
+            Back to login
+          </button>
+        </div>
+      </AuthLayout>
+    );
   }
 
   return (
@@ -57,7 +109,7 @@ function Login() {
           )}
           <button type="submit">Login</button>
         </form>
-        <SocialAuthButtons />
+        <SocialAuthButtons onRequiresTwoFactor={setTwoFactorTicket} />
         <p className="auth-footer-text">
           No account? <Link to="/register">Register</Link>
         </p>

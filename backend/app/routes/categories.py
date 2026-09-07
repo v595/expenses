@@ -22,6 +22,18 @@ def create_category():
     return jsonify({"message": "Category created", "category": category}), 201
 
 
+@categories_bp.route("/api/categories/<int:category_id>", methods=["PUT"])
+@login_required
+def update_category(category_id):
+    try:
+        category = category_service.update_category(
+            category_id, g.current_user["id"], request.get_json(silent=True)
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "Category updated", "category": category}), 200
+
+
 @categories_bp.route("/api/categories/<int:category_id>", methods=["DELETE"])
 @login_required
 def delete_category(category_id):

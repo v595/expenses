@@ -48,7 +48,12 @@ export function getRangeForPeriod(period) {
   return { start_date: toISO(start), end_date: toISO(end) };
 }
 
-const PERIOD_LABEL = { week: "Weekly", month: "Monthly", year: "Yearly" };
+// India's financial year: April 1 of `startYear` through March 31 of the next.
+export function getFinancialYearRange(startYear) {
+  return { start_date: `${startYear}-04-01`, end_date: `${startYear + 1}-03-31` };
+}
+
+const PERIOD_LABEL = { week: "Weekly", month: "Monthly", year: "Yearly", fy: "Financial Year Tax" };
 
 function statBlock(doc, x, y, width, label, value, colorStart, colorEnd) {
   doc.setFillColor(248, 248, 251);
@@ -65,7 +70,7 @@ function statBlock(doc, x, y, width, label, value, colorStart, colorEnd) {
   doc.setFont(undefined, "normal");
 }
 
-export function downloadReportPdf({ period, userName, transactions, range, currency = "USD" }) {
+export function downloadReportPdf({ period, userName, transactions, range, currency = "USD", fileName }) {
   const income = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const balance = income - expenses;
@@ -89,7 +94,7 @@ export function downloadReportPdf({ period, userName, transactions, range, curre
   doc.text("Hisaab", 14, 15);
   doc.setFontSize(10.5);
   doc.setFont(undefined, "normal");
-  doc.text(`${PERIOD_LABEL[period]} Budget Report`, 14, 23);
+  doc.text(period === "fy" ? "Tax Summary Report" : `${PERIOD_LABEL[period]} Budget Report`, 14, 23);
   doc.setFontSize(8.5);
   doc.setTextColor(220, 220, 255);
   doc.text(`${userName}  |  ${range.start_date} to ${range.end_date}`, 14, 29.5);
@@ -199,5 +204,5 @@ export function downloadReportPdf({ period, userName, transactions, range, curre
     doc.text("No transactions recorded in this period.", 14, cursorY + 10);
   }
 
-  doc.save(`${period}-budget-report.pdf`);
+  doc.save(fileName || `${period}-budget-report.pdf`);
 }

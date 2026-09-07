@@ -105,10 +105,50 @@ def update_password(user_id, password_hash):
     db.session.commit()
 
 
-def set_user_token(user_id, token):
+def set_user_token(user_id, token, expires_at=None):
     user = db.session.get(User, user_id)
     user.token = token
+    user.token_expires_at = expires_at
     db.session.commit()
+
+
+def touch_token_expiry(user_id, expires_at):
+    """Sliding-window session: called on every authenticated request so an
+    active user's token keeps rolling forward instead of expiring mid-use."""
+    user = db.session.get(User, user_id)
+    user.token_expires_at = expires_at
+    db.session.commit()
+
+
+def register_failed_login(user_id, locked_until=None):
+    user = db.session.get(User, user_id)
+    user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+    if locked_until is not None:
+        user.locked_until = locked_until
+    db.session.commit()
+    return user.failed_login_attempts
+
+
+def reset_failed_logins(user_id):
+    user = db.session.get(User, user_id)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    db.session.commit()
+
+
+def set_totp_secret(user_id, secret):
+    user = db.session.get(User, user_id)
+    user.totp_secret = secret
+    db.session.commit()
+
+
+def set_totp_enabled(user_id, enabled):
+    user = db.session.get(User, user_id)
+    user.totp_enabled = enabled
+    if not enabled:
+        user.totp_secret = None
+    db.session.commit()
+    return user.to_dict()
 
 
 def record_login(user_id, timestamp):
@@ -135,7 +175,9 @@ def delete_user(user_id):
         Bill,
         Book,
         Budget,
+        BudgetShare,
         Category,
+        Debt,
         Goal,
         LedgerEntry,
         Notification,
@@ -162,12 +204,24 @@ def delete_user(user_id):
     db.session.query(Party).filter_by(user_id=user_id).delete()
     db.session.query(Book).filter_by(user_id=user_id).delete()
     db.session.query(Tag).filter_by(user_id=user_id).delete()
+    # A share references its budget's id, so clear shares before the budgets
+    # themselves — both directions, since this user could be the one who
+    # shared a budget out, or the one it was shared with.
+    owned_budget_ids = [
+        row[0] for row in db.session.query(Budget.id).filter_by(user_id=user_id).all()
+    ]
+    if owned_budget_ids:
+        db.session.query(BudgetShare).filter(BudgetShare.budget_id.in_(owned_budget_ids)).delete(
+            synchronize_session=False
+        )
+    db.session.query(BudgetShare).filter_by(shared_with_user_id=user_id).delete()
     db.session.query(Budget).filter_by(user_id=user_id).delete()
     db.session.query(RecurringTransaction).filter_by(user_id=user_id).delete()
     db.session.query(Account).filter_by(user_id=user_id).delete()
     db.session.query(Category).filter_by(user_id=user_id).delete()
     db.session.query(Goal).filter_by(user_id=user_id).delete()
     db.session.query(Bill).filter_by(user_id=user_id).delete()
+    db.session.query(Debt).filter_by(user_id=user_id).delete()
     db.session.query(Notification).filter_by(user_id=user_id).delete()
     db.session.query(ActivityLog).filter_by(user_id=user_id).delete()
     db.session.query(User).filter_by(id=user_id).delete()

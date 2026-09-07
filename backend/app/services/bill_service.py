@@ -29,7 +29,7 @@ def get_bills(user_id):
     return bill_model.get_bills_by_user(user_id)
 
 
-def create_bill(user_id, data):
+def _validate_bill_data(data):
     if not isinstance(data, dict):
         raise ValueError("Request body must be a JSON object")
 
@@ -62,10 +62,33 @@ def create_bill(user_id, data):
     if bill_type is not None and bill_type not in VALID_BILL_TYPES:
         raise ValueError(f"Bill type must be one of {', '.join(VALID_BILL_TYPES)}")
 
+    return {
+        "name": name.strip(),
+        "amount": float(amount),
+        "due_date": due_date,
+        "repeat_frequency": repeat_frequency,
+        "bill_type": bill_type,
+    }
+
+
+def create_bill(user_id, data):
+    clean = _validate_bill_data(data)
     bill = bill_model.create_bill(
-        user_id, name.strip(), float(amount), due_date, repeat_frequency, bill_type
+        user_id, clean["name"], clean["amount"], clean["due_date"], clean["repeat_frequency"], clean["bill_type"]
     )
-    activity_log_model.log(user_id, "Created bill", f"{name.strip()} {float(amount):.2f} due {due_date}")
+    activity_log_model.log(user_id, "Created bill", f"{clean['name']} {clean['amount']:.2f} due {clean['due_date']}")
+    return bill
+
+
+def update_bill(bill_id, user_id, data):
+    clean = _validate_bill_data(data)
+    bill = bill_model.update_bill(
+        bill_id, user_id, clean["name"], clean["amount"], clean["due_date"],
+        clean["repeat_frequency"], clean["bill_type"],
+    )
+    if bill is None:
+        raise ValueError("Bill not found")
+    activity_log_model.log(user_id, "Updated bill", f"{clean['name']} {clean['amount']:.2f} due {clean['due_date']}")
     return bill
 
 

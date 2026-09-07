@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { IconPlus, IconTrash } from "../components/icons";
+import { IconEdit, IconPlus, IconTrash } from "../components/icons";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
-import { createCategory, deleteCategory, getCategories } from "../services/api";
+import { createCategory, deleteCategory, getCategories, updateCategory } from "../services/api";
 
 const SWATCHES = ["#4f46e5", "#0891b2", "#d97706", "#db2777", "#65a30d", "#7c3aed", "#0d9488", "#ea580c"];
 
@@ -15,6 +15,7 @@ function Categories() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null); // null = "add" mode
 
   function refresh() {
     setLoading(true);
@@ -29,11 +30,27 @@ function Categories() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  function handleEdit(category) {
+    setEditingId(category.id);
+    setForm({ name: category.name, type: category.type, color: category.color || SWATCHES[0] });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     try {
-      await createCategory(form, token);
+      if (editingId) {
+        // Type is fixed once created — only name/color are sent.
+        await updateCategory(editingId, { name: form.name, color: form.color }, token);
+        setEditingId(null);
+      } else {
+        await createCategory(form, token);
+      }
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -45,6 +62,7 @@ function Categories() {
     setError(null);
     try {
       await deleteCategory(id, token);
+      if (editingId === id) handleCancelEdit();
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -81,6 +99,7 @@ function Categories() {
               ariaLabel="Category type"
               value={form.type}
               onChange={(type) => setForm((f) => ({ ...f, type }))}
+              disabled={Boolean(editingId)}
               options={[
                 { value: "expense", label: "Expense" },
                 { value: "income", label: "Income" },
@@ -107,8 +126,13 @@ function Categories() {
         <div className="form-actions">
           <button type="submit">
             <IconPlus width={16} height={16} />
-            Add Category
+            {editingId ? "Save Changes" : "Add Category"}
           </button>
+          {editingId && (
+            <button type="button" className="link-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
         </div>
       </form>
 
@@ -124,8 +148,15 @@ function Categories() {
               <div className="category-chip-list">
                 {income.map((c) => (
                   <span key={c.id} className="category-chip">
-                    <span className="category-dot" style={{ background: c.color || "#4f46e5" }} />
-                    {c.name}
+                    <button
+                      type="button"
+                      className="chip-edit"
+                      onClick={() => handleEdit(c)}
+                      aria-label={`Edit ${c.name}`}
+                    >
+                      <span className="category-dot" style={{ background: c.color || "#4f46e5" }} />
+                      {c.name}
+                    </button>
                     <button
                       type="button"
                       className="chip-remove"
@@ -148,8 +179,15 @@ function Categories() {
               <div className="category-chip-list">
                 {expense.map((c) => (
                   <span key={c.id} className="category-chip">
-                    <span className="category-dot" style={{ background: c.color || "#4f46e5" }} />
-                    {c.name}
+                    <button
+                      type="button"
+                      className="chip-edit"
+                      onClick={() => handleEdit(c)}
+                      aria-label={`Edit ${c.name}`}
+                    >
+                      <span className="category-dot" style={{ background: c.color || "#4f46e5" }} />
+                      {c.name}
+                    </button>
                     <button
                       type="button"
                       className="chip-remove"

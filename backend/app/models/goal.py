@@ -30,6 +30,17 @@ def create_goal(user_id, name, target_amount, target_date):
     return goal.to_dict()
 
 
+def update_goal(goal_id, user_id, name, target_amount, target_date):
+    goal = db.session.query(Goal).filter_by(id=goal_id, user_id=user_id).first()
+    if goal is None:
+        return None
+    goal.name = name
+    goal.target_amount = target_amount
+    goal.target_date = target_date
+    db.session.commit()
+    return goal.to_dict()
+
+
 def add_funds(goal_id, user_id, amount):
     goal = db.session.query(Goal).filter_by(id=goal_id, user_id=user_id).first()
     if goal is None:

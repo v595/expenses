@@ -98,6 +98,55 @@ def test_recurring_requires_authentication(client):
     assert response.status_code == 401
 
 
+def test_update_recurring(client):
+    headers = auth_headers(client)
+    response = client.post(
+        "/api/recurring",
+        json={
+            "amount": 500,
+            "type": "expense",
+            "category": "Rent",
+            "frequency": "monthly",
+            "start_date": "2026-01-01",
+        },
+        headers=headers,
+    )
+    recurring_id = response.get_json()["recurring"]["id"]
+
+    response = client.put(
+        f"/api/recurring/{recurring_id}",
+        json={
+            "amount": 650,
+            "type": "expense",
+            "category": "Rent (increased)",
+            "frequency": "monthly",
+            "next_date": "2026-02-01",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    updated = response.get_json()["recurring"]
+    assert updated["amount"] == 650
+    assert updated["category"] == "Rent (increased)"
+    assert updated["next_date"] == "2026-02-01"
+
+
+def test_update_recurring_not_found(client):
+    headers = auth_headers(client)
+    response = client.put(
+        "/api/recurring/999",
+        json={
+            "amount": 100,
+            "type": "expense",
+            "category": "Rent",
+            "frequency": "monthly",
+            "next_date": "2026-01-01",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 400
+
+
 def test_create_recurring_rejects_invalid_frequency(client):
     headers = auth_headers(client)
     response = client.post(

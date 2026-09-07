@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 
-import { IconPlus, IconTrash, IconWalletStack } from "../components/icons";
+import { IconPlus, IconTrash, IconTrendingUp, IconWalletStack } from "../components/icons";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { ALL_ACCOUNT_SOURCES } from "../data/banks";
-import { createAccount, deleteAccount, getAccounts } from "../services/api";
+import { createAccount, deleteAccount, getAccounts, getNetWorth } from "../services/api";
 import { toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
-const TYPES = ["cash", "bank", "card", "savings", "other"];
+const TYPES = ["cash", "bank", "card", "savings", "investment", "loan", "other"];
+const LIABILITY_TYPES = new Set(["loan"]);
 const EMPTY_FORM = { name: "", type: "cash", balance: "", source: "" };
 
 const TYPE_OPTIONS = TYPES.map((t) => ({
@@ -39,6 +40,7 @@ function Accounts() {
   const { token, user } = useAuth();
   const formatMoney = (amount) => formatMoneyIn(amount, user.currency);
   const [accounts, setAccounts] = useState([]);
+  const [netWorth, setNetWorth] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,8 +62,11 @@ function Accounts() {
 
   function refresh() {
     setLoading(true);
-    return getAccounts(token)
-      .then(setAccounts)
+    return Promise.all([getAccounts(token), getNetWorth(token)])
+      .then(([accountsData, netWorthData]) => {
+        setAccounts(accountsData);
+        setNetWorth(netWorthData);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
@@ -176,6 +181,37 @@ function Accounts() {
                 <p className="summary-card-value">{formatMoney(totalBalance)}</p>
               </div>
             </div>
+            {netWorth && (
+              <>
+                <div className="card summary-card summary-card--income">
+                  <span className="summary-card-icon">
+                    <IconTrendingUp width={20} height={20} />
+                  </span>
+                  <div>
+                    <p className="summary-card-label">Assets</p>
+                    <p className="summary-card-value">{formatMoney(netWorth.assets)}</p>
+                  </div>
+                </div>
+                <div className="card summary-card summary-card--expense">
+                  <span className="summary-card-icon">
+                    <IconWalletStack width={20} height={20} />
+                  </span>
+                  <div>
+                    <p className="summary-card-label">Liabilities</p>
+                    <p className="summary-card-value">{formatMoney(netWorth.liabilities)}</p>
+                  </div>
+                </div>
+                <div className="card summary-card summary-card--balance">
+                  <span className="summary-card-icon">
+                    <IconWalletStack width={20} height={20} />
+                  </span>
+                  <div>
+                    <p className="summary-card-label">Net Worth</p>
+                    <p className="summary-card-value">{formatMoney(netWorth.net_worth)}</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="account-card-grid">

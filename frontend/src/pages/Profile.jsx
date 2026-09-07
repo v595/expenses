@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Avatar from "../components/Avatar";
 import { IconCamera, IconLogout } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
+import { disableTwoFactor, enableTwoFactor, setupTwoFactor } from "../services/api";
 import { DEFAULT_CURRENCY } from "../utils/currency";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB, matches the backend cap
@@ -24,10 +25,55 @@ function IconSpinner() {
 }
 
 function Profile() {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, token, updateProfile, logout, setUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // null = not mid-setup, otherwise { secret, otpauth_url } from /2fa/setup
+  const [twoFactorSetup, setTwoFactorSetup] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorStatus, setTwoFactorStatus] = useState(null);
+  const [disableForm, setDisableForm] = useState({ password: "", code: "" });
+  const [showDisableForm, setShowDisableForm] = useState(false);
+
+  async function handleStartTwoFactorSetup() {
+    setTwoFactorStatus(null);
+    try {
+      const data = await setupTwoFactor(token);
+      setTwoFactorSetup(data);
+    } catch (err) {
+      setTwoFactorStatus({ type: "error", message: err.message });
+    }
+  }
+
+  async function handleEnableTwoFactor(event) {
+    event.preventDefault();
+    setTwoFactorStatus(null);
+    try {
+      const result = await enableTwoFactor(twoFactorCode, token);
+      setUser(result.user);
+      setTwoFactorSetup(null);
+      setTwoFactorCode("");
+      setTwoFactorStatus({ type: "success", message: "Two-factor authentication is on." });
+    } catch (err) {
+      setTwoFactorStatus({ type: "error", message: err.message });
+    }
+  }
+
+  async function handleDisableTwoFactor(event) {
+    event.preventDefault();
+    setTwoFactorStatus(null);
+    try {
+      const result = await disableTwoFactor(disableForm.password, disableForm.code, token);
+      setUser(result.user);
+      setShowDisableForm(false);
+      setDisableForm({ password: "", code: "" });
+      setTwoFactorStatus({ type: "success", message: "Two-factor authentication is off." });
+    } catch (err) {
+      setTwoFactorStatus({ type: "error", message: err.message });
+    }
+  }
 
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState(null); // { type: 'success' | 'error', message }
@@ -254,6 +300,101 @@ function Profile() {
               <button type="submit">Update password</button>
             </div>
           </form>
+        </div>
+
+        <div className="card card-padded">
+          <div className="profile-card-head">
+            <h2 className="card-title">Two-factor authentication</h2>
+            <p>
+              {user.totp_enabled
+                ? "Enabled — a code from your authenticator app is required at login."
+                : "Add an authenticator-app code as a second step at login."}
+            </p>
+          </div>
+          {twoFactorStatus && (
+            <p className={twoFactorStatus.type === "error" ? "error-message" : "success-message"}>
+              {twoFactorStatus.message}
+            </p>
+          )}
+
+          {!user.totp_enabled && !twoFactorSetup && (
+            <div className="form-actions">
+              <button type="button" onClick={handleStartTwoFactorSetup}>
+                Set up two-factor authentication
+              </button>
+            </div>
+          )}
+
+          {!user.totp_enabled && twoFactorSetup && (
+            <form onSubmit={handleEnableTwoFactor}>
+              <p>
+                Add this key to an authenticator app (Google Authenticator, Authy, etc.), then
+                enter the 6-digit code it shows.
+              </p>
+              <label>
+                Secret key
+                <input type="text" value={twoFactorSetup.secret} readOnly onFocus={(e) => e.target.select()} />
+              </label>
+              <label>
+                6-digit code
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="form-actions">
+                <button type="submit">Confirm and enable</button>
+                <button type="button" className="link-btn" onClick={() => setTwoFactorSetup(null)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          {user.totp_enabled && !showDisableForm && (
+            <div className="form-actions">
+              <button type="button" className="btn-danger" onClick={() => setShowDisableForm(true)}>
+                Turn off two-factor authentication
+              </button>
+            </div>
+          )}
+
+          {user.totp_enabled && showDisableForm && (
+            <form onSubmit={handleDisableTwoFactor}>
+              <label>
+                Current password
+                <input
+                  type="password"
+                  value={disableForm.password}
+                  onChange={(e) => setDisableForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                6-digit code
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={disableForm.code}
+                  onChange={(e) => setDisableForm((prev) => ({ ...prev, code: e.target.value }))}
+                  required
+                />
+              </label>
+              <div className="form-actions">
+                <button type="submit" className="btn-danger">
+                  Confirm turn off
+                </button>
+                <button type="button" className="link-btn" onClick={() => setShowDisableForm(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         <div className="card card-padded profile-signout">

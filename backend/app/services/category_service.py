@@ -36,6 +36,37 @@ def create_category(user_id, data):
     return category
 
 
+def update_category(category_id, user_id, data):
+    if not isinstance(data, dict):
+        raise ValueError("Request body must be a JSON object")
+
+    name = data.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Name is required")
+    if len(name.strip()) > MAX_NAME_LENGTH:
+        raise ValueError(f"Name must be {MAX_NAME_LENGTH} characters or fewer")
+
+    color = data.get("color") or None
+    if color is not None and (not isinstance(color, str) or len(color) > 20):
+        raise ValueError("Color must be a short string (e.g. a hex code)")
+
+    name = name.strip()
+    existing = category_model.get_category_by_id(category_id, user_id)
+    if existing is None:
+        raise ValueError("Category not found")
+
+    duplicate = [
+        c for c in category_model.get_categories_by_user(user_id)
+        if c["id"] != category_id and c["name"] == name and c["type"] == existing["type"]
+    ]
+    if duplicate:
+        raise ValueError("That category already exists")
+
+    category = category_model.update_category(category_id, user_id, name, color)
+    activity_log_model.log(user_id, "Updated category", name)
+    return category
+
+
 def delete_category(category_id, user_id):
     category_model.delete_category(category_id, user_id)
     activity_log_model.log(user_id, "Deleted category", f"#{category_id}")

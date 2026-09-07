@@ -103,3 +103,93 @@ def test_change_password_success_then_old_password_fails(client):
         "/api/auth/login", json={"email": "alice@example.com", "password": "newsecret123"}
     )
     assert new_login.status_code == 200
+
+
+def test_account_locks_after_repeated_failed_logins(client):
+    register(client)
+
+    for _ in range(5):
+        response = client.post(
+            "/api/auth/login", json={"email": "alice@example.com", "password": "wrong"}
+        )
+        assert response.status_code == 401
+
+    # 6th attempt is locked out even with the correct password.
+    locked = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "secret123"}
+    )
+    assert locked.status_code == 429
+
+
+def test_two_factor_setup_enable_and_login_flow(client):
+    headers = auth_headers(client)
+
+    setup = client.post("/api/auth/2fa/setup", headers=headers)
+    assert setup.status_code == 200
+    secret = setup.get_json()["secret"]
+
+    import pyotp
+
+    code = pyotp.TOTP(secret).now()
+    enable = client.post("/api/auth/2fa/enable", json={"code": code}, headers=headers)
+    assert enable.status_code == 200
+    assert enable.get_json()["user"]["totp_enabled"] is True
+
+    # Password alone no longer completes login.
+    login = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "secret123"}
+    )
+    assert login.status_code == 200
+    login_data = login.get_json()
+    assert login_data["requires_two_factor"] is True
+    assert "token" not in login_data
+
+    verify = client.post(
+        "/api/auth/2fa/verify",
+        json={"ticket": login_data["ticket"], "code": pyotp.TOTP(secret).now()},
+    )
+    assert verify.status_code == 200
+    assert "token" in verify.get_json()
+
+
+def test_two_factor_wrong_code_rejected(client):
+    headers = auth_headers(client)
+    setup = client.post("/api/auth/2fa/setup", headers=headers)
+    secret = setup.get_json()["secret"]
+
+    import pyotp
+
+    client.post("/api/auth/2fa/enable", json={"code": pyotp.TOTP(secret).now()}, headers=headers)
+
+    login = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "secret123"}
+    )
+    ticket = login.get_json()["ticket"]
+
+    bad = client.post("/api/auth/2fa/verify", json={"ticket": ticket, "code": "000000"})
+    assert bad.status_code == 401
+
+
+def test_two_factor_disable_requires_password_and_code(client):
+    headers = auth_headers(client)
+    setup = client.post("/api/auth/2fa/setup", headers=headers)
+    secret = setup.get_json()["secret"]
+
+    import pyotp
+
+    client.post("/api/auth/2fa/enable", json={"code": pyotp.TOTP(secret).now()}, headers=headers)
+
+    wrong_password = client.post(
+        "/api/auth/2fa/disable",
+        json={"password": "wrong", "code": pyotp.TOTP(secret).now()},
+        headers=headers,
+    )
+    assert wrong_password.status_code == 401
+
+    disable = client.post(
+        "/api/auth/2fa/disable",
+        json={"password": "secret123", "code": pyotp.TOTP(secret).now()},
+        headers=headers,
+    )
+    assert disable.status_code == 200
+    assert disable.get_json()["user"]["totp_enabled"] is False

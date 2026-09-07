@@ -2041,6 +2041,24 @@ textarea:disabled {
   font-weight: 600;
 }
 
+.chip-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+}
+
+.chip-edit:hover {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.8;
+}
+
 .chip-remove {
   display: inline-flex;
   align-items: center;

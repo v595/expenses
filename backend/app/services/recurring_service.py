@@ -47,7 +47,7 @@ def get_recurring(user_id):
     return recurring_model.get_recurring_by_user(user_id)
 
 
-def create_recurring(data, user_id):
+def _validate_recurring_data(data, date_field):
     if not isinstance(data, dict):
         raise ValueError("Request body must be a JSON object")
 
@@ -69,13 +69,13 @@ def create_recurring(data, user_id):
     if frequency not in VALID_FREQUENCIES:
         raise ValueError("Frequency must be 'weekly', 'monthly', or 'yearly'")
 
-    start_date = data.get("start_date")
-    if not isinstance(start_date, str):
-        raise ValueError("Start date is required")
+    date_value = data.get(date_field)
+    if not isinstance(date_value, str):
+        raise ValueError(f"{date_field.replace('_', ' ').title()} is required")
     try:
-        datetime.strptime(start_date, "%Y-%m-%d")
+        datetime.strptime(date_value, "%Y-%m-%d")
     except ValueError:
-        raise ValueError("Start date must be a valid date in YYYY-MM-DD format")
+        raise ValueError(f"{date_field.replace('_', ' ').title()} must be a valid date in YYYY-MM-DD format")
 
     description = data.get("description") or ""
     if not isinstance(description, str):
@@ -83,10 +83,35 @@ def create_recurring(data, user_id):
     if len(description) > MAX_DESCRIPTION_LENGTH:
         raise ValueError(f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer")
 
+    return {
+        "amount": float(amount),
+        "type": type_,
+        "category": category.strip(),
+        "description": description.strip(),
+        "frequency": frequency,
+        "date": date_value,
+    }
+
+
+def create_recurring(data, user_id):
+    clean = _validate_recurring_data(data, "start_date")
     rule = recurring_model.create_recurring(
-        user_id, float(amount), type_, category.strip(), description.strip(), frequency, start_date
+        user_id, clean["amount"], clean["type"], clean["category"], clean["description"],
+        clean["frequency"], clean["date"],
     )
-    activity_log_model.log(user_id, "Created recurring rule", f"{category.strip()} ({frequency})")
+    activity_log_model.log(user_id, "Created recurring rule", f"{clean['category']} ({clean['frequency']})")
+    return rule
+
+
+def update_recurring(recurring_id, user_id, data):
+    clean = _validate_recurring_data(data, "next_date")
+    rule = recurring_model.update_recurring(
+        recurring_id, user_id, clean["amount"], clean["type"], clean["category"], clean["description"],
+        clean["frequency"], clean["date"],
+    )
+    if rule is None:
+        raise ValueError("Recurring rule not found")
+    activity_log_model.log(user_id, "Updated recurring rule", f"{clean['category']} ({clean['frequency']})")
     return rule
 
 

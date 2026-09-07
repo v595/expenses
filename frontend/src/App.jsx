@@ -8,11 +8,15 @@ import { loadRates } from "./utils/fx";
 import Accounts from "./pages/Accounts";
 import Bills from "./pages/Bills";
 import Budgets from "./pages/Budgets";
+import Cashbook from "./pages/Cashbook";
 import Categories from "./pages/Categories";
 import Dashboard from "./pages/Dashboard";
+import DebtPayoff from "./pages/DebtPayoff";
 import Goals from "./pages/Goals";
+import Ledger from "./pages/Ledger";
 import Login from "./pages/Login";
 import Notifications from "./pages/Notifications";
+import PartyDetail from "./pages/PartyDetail";
 import Profile from "./pages/Profile";
 import Recurring from "./pages/Recurring";
 import Register from "./pages/Register";
@@ -98,6 +102,38 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Categories />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/ledger"
+        element={
+          <RequireAuth>
+            <Ledger />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/ledger/:partyId"
+        element={
+          <RequireAuth>
+            <PartyDetail />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cashbook"
+        element={
+          <RequireAuth>
+            <Cashbook />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/debt-payoff"
+        element={
+          <RequireAuth>
+            <DebtPayoff />
           </RequireAuth>
         }
       />

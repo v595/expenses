@@ -33,6 +33,16 @@ def get_category_by_id(category_id, user_id):
     return category.to_dict() if category else None
 
 
+def update_category(category_id, user_id, name, color):
+    category = db.session.query(Category).filter_by(id=category_id, user_id=user_id).first()
+    if category is None:
+        return None
+    category.name = name
+    category.color = color
+    db.session.commit()
+    return category.to_dict()
+
+
 def delete_category(category_id, user_id):
     db.session.query(Category).filter_by(id=category_id, user_id=user_id).delete()
     db.session.commit()

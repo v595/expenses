@@ -5,6 +5,7 @@ from functools import wraps
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.extensions import limiter
 from app.models import role as role_model
 from app.models import user as user_model
 from app.services import admin_service, authz_service, feature_flag_service, system_settings_service
@@ -145,6 +146,7 @@ def _render(template, active_nav, **context):
 
 
 @admin_dashboard_bp.route("/admin/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
     if session.get(SESSION_KEY):
         return redirect(url_for("admin_dashboard.dashboard"))

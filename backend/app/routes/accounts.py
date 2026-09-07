@@ -22,6 +22,12 @@ def create_account():
     return jsonify({"message": "Account created", "account": account}), 201
 
 
+@accounts_bp.route("/api/accounts/net-worth", methods=["GET"])
+@login_required
+def net_worth():
+    return jsonify(account_service.get_net_worth(g.current_user["id"])), 200
+
+
 @accounts_bp.route("/api/accounts/<int:account_id>", methods=["PUT"])
 @login_required
 def update_account(account_id):

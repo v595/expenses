@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { BILL_TYPE_OPTIONS, billTypeIcon } from "../components/billIcons";
-import { IconCheck, IconPlus, IconTrash } from "../components/icons";
+import { IconCheck, IconEdit, IconPlus, IconTrash } from "../components/icons";
 import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
-import { createBill, deleteBill, getBills, payBill } from "../services/api";
-import { toBase } from "../utils/fx";
+import { createBill, deleteBill, getBills, payBill, updateBill } from "../services/api";
+import { fromBase, toBase } from "../utils/fx";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
 
 const REPEAT_OPTIONS = [
@@ -30,6 +30,7 @@ function Bills() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null); // null = "add" mode
 
   // Choosing a type fills the name for you, unless you've typed your own.
   function handleTypeChange(bill_type) {
@@ -57,11 +58,33 @@ function Bills() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  function handleEdit(bill) {
+    setEditingId(bill.id);
+    setForm({
+      name: bill.name,
+      amount: fromBase(bill.amount, user.currency),
+      due_date: bill.due_date,
+      repeat_frequency: bill.repeat_frequency || "none",
+      bill_type: bill.bill_type || "",
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     try {
-      await createBill({ ...form, amount: toBase(form.amount, user.currency) }, token);
+      const payload = { ...form, amount: toBase(form.amount, user.currency) };
+      if (editingId) {
+        await updateBill(editingId, payload, token);
+        setEditingId(null);
+      } else {
+        await createBill(payload, token);
+      }
       setForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
@@ -83,6 +106,7 @@ function Bills() {
     setError(null);
     try {
       await deleteBill(id, token);
+      if (editingId === id) handleCancelEdit();
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -157,8 +181,13 @@ function Bills() {
         <div className="form-actions">
           <button type="submit">
             <IconPlus width={16} height={16} />
-            Add Bill
+            {editingId ? "Save Changes" : "Add Bill"}
           </button>
+          {editingId && (
+            <button type="button" className="link-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
         </div>
       </form>
 
@@ -220,6 +249,14 @@ function Bills() {
                             <IconCheck width={16} height={16} />
                           </button>
                         )}
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Edit"
+                          onClick={() => handleEdit(b)}
+                        >
+                          <IconEdit width={16} height={16} />
+                        </button>
                         <button
                           type="button"
                           className="btn-icon danger"

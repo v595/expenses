@@ -18,6 +18,9 @@ import {
   IconTag,
   IconTarget,
   IconTransactions,
+  IconTrendingDown,
+  IconUser,
+  IconWallet,
   IconWalletStack,
   IconX,
 } from "./icons";
@@ -63,7 +66,10 @@ function Navbar() {
     { to: "/accounts", label: "Accounts", icon: IconWalletStack },
     { to: "/goals", label: "Goals", icon: IconFlag },
     { to: "/bills", label: "Bills", icon: IconReceipt },
+    { to: "/debt-payoff", label: "Debt Payoff", icon: IconTrendingDown },
     { to: "/categories", label: "Categories", icon: IconTag },
+    { to: "/ledger", label: "Ledger", icon: IconUser },
+    { to: "/cashbook", label: "Cashbook", icon: IconWallet },
     // No "Profile" row here on purpose — the avatar + name in the sidebar
     // footer already links to /profile, so a text link would be a duplicate
     // entry to the same page. Logout lives on the profile page itself.
@@ -116,7 +122,11 @@ function Navbar() {
             <Link
               key={to}
               to={to}
-              className={`sidebar-link${location.pathname === to ? " active" : ""}`}
+              className={`sidebar-link${
+                location.pathname === to || (to !== "/" && location.pathname.startsWith(`${to}/`))
+                  ? " active"
+                  : ""
+              }`}
               onClick={() => setMobileOpen(false)}
             >
               <Icon width={18} height={18} />

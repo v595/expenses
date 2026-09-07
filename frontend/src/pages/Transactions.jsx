@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { IconDownload, IconSearch, IconUpload } from "../components/icons";
 import Select from "../components/Select";
+import SplitExpenseForm from "../components/SplitExpenseForm";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import { useAuth } from "../context/AuthContext";
@@ -14,6 +15,7 @@ import {
   updateTransaction,
 } from "../services/api";
 import { downloadTransactionsCsv } from "../utils/downloadCsv";
+import { parseSmsText } from "../utils/parseSms";
 import { parseTransactionsCsv } from "../utils/parseTransactionsCsv";
 
 const EMPTY_FILTERS = { search: "", category: "", type: "", start_date: "", end_date: "", tag_id: "" };
@@ -23,6 +25,13 @@ function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [tags, setTags] = useState([]);
   const [editingTransaction, setEditingTransaction] = useState(null); // null = "add" mode
+  const [splittingTransaction, setSplittingTransaction] = useState(null);
+  const [splitNotice, setSplitNotice] = useState(null);
+  const [showSmsPaste, setShowSmsPaste] = useState(false);
+  const [smsText, setSmsText] = useState("");
+  const [smsPrefill, setSmsPrefill] = useState(null);
+  const [smsError, setSmsError] = useState(null);
+  const [formKey, setFormKey] = useState(0);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +94,26 @@ function Transactions() {
     }
   }
 
+  function handleParseSms() {
+    setSmsError(null);
+    const parsed = parseSmsText(smsText);
+    if (!parsed) {
+      setSmsError("Couldn't find an amount in that text — paste the full SMS.");
+      return;
+    }
+    setSmsPrefill({
+      amount: String(parsed.amount),
+      type: parsed.type || "expense",
+      date: parsed.date || new Date().toISOString().slice(0, 10),
+      description: parsed.description || "",
+    });
+    setEditingTransaction(null);
+    setSplittingTransaction(null);
+    setFormKey((k) => k + 1);
+    setShowSmsPaste(false);
+    setSmsText("");
+  }
+
   async function handleImportFile(event) {
     const file = event.target.files[0];
     event.target.value = "";
@@ -124,12 +153,54 @@ function Transactions() {
         </p>
       )}
 
-      <TransactionForm
-        key={editingTransaction ? editingTransaction.id : "new"}
-        initialValues={editingTransaction}
-        onSubmit={editingTransaction ? handleUpdate : handleAdd}
-        onCancel={editingTransaction ? () => setEditingTransaction(null) : null}
-      />
+      {splitNotice && <p className="success-message">{splitNotice}</p>}
+
+      <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
+        <button type="button" className="btn-secondary" onClick={() => setShowSmsPaste((v) => !v)}>
+          {showSmsPaste ? "Cancel" : "Paste Bank SMS"}
+        </button>
+      </div>
+
+      {showSmsPaste && (
+        <div className="card card-padded" style={{ marginBottom: "1rem" }}>
+          <p style={{ marginTop: 0, fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+            Paste a bank debit/credit SMS — the amount, date, and merchant get pulled out and pre-filled
+            below for you to review before saving. Nothing is created automatically.
+          </p>
+          {smsError && <p className="error-message">{smsError}</p>}
+          <textarea
+            rows={3}
+            value={smsText}
+            onChange={(e) => setSmsText(e.target.value)}
+            placeholder="e.g. Rs.500.00 debited from A/c XX1234 on 07-09-26 to VPA merchant@ok. Avl Bal Rs 4500.00"
+            style={{ width: "100%" }}
+          />
+          <div className="form-actions">
+            <button type="button" onClick={handleParseSms} disabled={!smsText.trim()}>
+              Parse
+            </button>
+          </div>
+        </div>
+      )}
+
+      {splittingTransaction ? (
+        <SplitExpenseForm
+          transaction={splittingTransaction}
+          onClose={() => setSplittingTransaction(null)}
+          onDone={() => {
+            setSplittingTransaction(null);
+            setSplitNotice("Split recorded on the Ledger page.");
+          }}
+        />
+      ) : (
+        <TransactionForm
+          key={editingTransaction ? `edit-${editingTransaction.id}` : `new-${formKey}`}
+          initialValues={editingTransaction}
+          prefillValues={editingTransaction ? undefined : smsPrefill}
+          onSubmit={editingTransaction ? handleUpdate : handleAdd}
+          onCancel={editingTransaction ? () => setEditingTransaction(null) : null}
+        />
+      )}
 
       <div className="card filter-bar">
         <div className="filter-field" style={{ flex: 1.4 }}>
@@ -227,6 +298,7 @@ function Transactions() {
           transactions={transactions}
           onEdit={setEditingTransaction}
           onDelete={handleDelete}
+          onSplit={setSplittingTransaction}
         />
       )}
     </div>

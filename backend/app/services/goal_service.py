@@ -10,7 +10,7 @@ def get_goals(user_id):
     return goal_model.get_goals_by_user(user_id)
 
 
-def create_goal(user_id, data):
+def _validate_goal_data(data):
     if not isinstance(data, dict):
         raise ValueError("Request body must be a JSON object")
 
@@ -35,8 +35,22 @@ def create_goal(user_id, data):
         except ValueError:
             raise ValueError("Target date must be a valid date in YYYY-MM-DD format")
 
-    goal = goal_model.create_goal(user_id, name.strip(), float(target_amount), target_date)
-    activity_log_model.log(user_id, "Created goal", f"{name.strip()} (target {float(target_amount):.2f})")
+    return {"name": name.strip(), "target_amount": float(target_amount), "target_date": target_date}
+
+
+def create_goal(user_id, data):
+    clean = _validate_goal_data(data)
+    goal = goal_model.create_goal(user_id, clean["name"], clean["target_amount"], clean["target_date"])
+    activity_log_model.log(user_id, "Created goal", f"{clean['name']} (target {clean['target_amount']:.2f})")
+    return goal
+
+
+def update_goal(goal_id, user_id, data):
+    clean = _validate_goal_data(data)
+    goal = goal_model.update_goal(goal_id, user_id, clean["name"], clean["target_amount"], clean["target_date"])
+    if goal is None:
+        raise ValueError("Goal not found")
+    activity_log_model.log(user_id, "Updated goal", f"{clean['name']} (target {clean['target_amount']:.2f})")
     return goal
 
 

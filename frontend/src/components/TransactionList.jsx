@@ -1,9 +1,9 @@
-import { IconEdit, IconReceipt, IconTrash } from "./icons";
+import { IconEdit, IconReceipt, IconTrash, IconUser } from "./icons";
 import { useAuth } from "../context/AuthContext";
 import { categoryColor } from "../utils/categoryColor";
 import { currencySymbol } from "../utils/currency";
 
-function TransactionList({ transactions, onEdit, onDelete }) {
+function TransactionList({ transactions, onEdit, onDelete, onSplit }) {
   const { user } = useAuth();
 
   function openReceipt(receipt) {
@@ -71,6 +71,11 @@ function TransactionList({ transactions, onEdit, onDelete }) {
                         onClick={() => openReceipt(transaction.receipt)}
                       >
                         <IconReceipt width={16} height={16} />
+                      </button>
+                    )}
+                    {transaction.type === "expense" && (
+                      <button className="btn-icon" title="Split with others" onClick={() => onSplit(transaction)}>
+                        <IconUser width={16} height={16} />
                       </button>
                     )}
                     <button className="btn-icon" title="Edit" onClick={() => onEdit(transaction)}>

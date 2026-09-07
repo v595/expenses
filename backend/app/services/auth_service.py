@@ -1,9 +1,12 @@
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+import pyotp
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.config import Config
 from app.models import activity_log as activity_log_model
 from app.models import book as book_model
 from app.models import system_setting as system_setting_model
@@ -12,6 +15,37 @@ from app.models import user as user_model
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD_LENGTH = 6
 MAX_AVATAR_LENGTH = 2_800_000  # ~2MB image, base64-encoded
+
+# Sliding-window session length: every authenticated request pushes the
+# token's expiry forward by this much (see login_required in routes/auth.py),
+# so an active user is never logged out mid-session but a stolen/idle token
+# stops working after this long of inactivity.
+TOKEN_TTL = timedelta(days=7)
+
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION = timedelta(minutes=15)
+
+# Short-lived, stateless "you passed step 1, now give me your TOTP code"
+# ticket — signed rather than stored, so no extra table/cleanup job is
+# needed for it to expire on its own.
+_TWO_FA_SALT = "2fa-pending-login"
+TWO_FA_TICKET_TTL_SECONDS = 5 * 60
+
+
+def _serializer():
+    return URLSafeTimedSerializer(Config.SECRET_KEY)
+
+
+def _issue_2fa_ticket(user_id):
+    return _serializer().dumps({"user_id": user_id}, salt=_TWO_FA_SALT)
+
+
+def _verify_2fa_ticket(ticket):
+    try:
+        data = _serializer().loads(ticket, salt=_TWO_FA_SALT, max_age=TWO_FA_TICKET_TTL_SECONDS)
+    except (BadSignature, SignatureExpired):
+        return None
+    return data.get("user_id")
 
 
 class AuthError(Exception):
@@ -43,6 +77,7 @@ def to_public_user(user):
         "role_name": user["role_name"] if "role_name" in user.keys() else None,
         "is_suspended": bool(user["is_suspended"]) if "is_suspended" in user.keys() else False,
         "last_login_at": user["last_login_at"] if "last_login_at" in user.keys() else None,
+        "totp_enabled": bool(user["totp_enabled"]) if "totp_enabled" in user.keys() else False,
     }
 
 
@@ -65,12 +100,46 @@ def _validate_register_data(data):
     return {"name": name.strip(), "email": email.strip().lower(), "password": password}
 
 
+def _now():
+    return datetime.now(timezone.utc)
+
+
 def _now_iso():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return _now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _parse_iso(value):
+    if not value:
+        return None
+    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
 
 
 def is_maintenance_mode():
     return system_setting_model.get("maintenance_mode", "false") == "true"
+
+
+def _issue_session(user):
+    """Common tail of every login path: clears lockout state, mints a fresh
+    bearer token with a sliding expiry, and records the login. If the account
+    has 2FA turned on, no token is issued yet — the caller gets a short-lived
+    ticket instead and must complete `verify_two_factor` with a TOTP code."""
+    if user.get("totp_enabled"):
+        return {"requires_two_factor": True, "ticket": _issue_2fa_ticket(user["id"])}
+
+    return _finish_login(user)
+
+
+def _finish_login(user):
+    book_model.ensure_default_book(user["id"])
+    user_model.reset_failed_logins(user["id"])
+
+    token = secrets.token_hex(32)
+    expires_at = (_now() + TOKEN_TTL).strftime("%Y-%m-%d %H:%M:%S")
+    user_model.set_user_token(user["id"], token, expires_at)
+    user_model.record_login(user["id"], _now_iso())
+
+    fresh = user_model.get_user_by_id(user["id"])
+    return {"user": to_public_user(fresh), "token": token}
 
 
 def register(data):
@@ -89,11 +158,13 @@ def register(data):
     user = user_model.get_user_by_id(user["id"])
 
     token = secrets.token_hex(32)
-    user_model.set_user_token(user["id"], token)
+    expires_at = (_now() + TOKEN_TTL).strftime("%Y-%m-%d %H:%M:%S")
+    user_model.set_user_token(user["id"], token, expires_at)
     user_model.record_login(user["id"], _now_iso())
     activity_log_model.log(user["id"], "Registered")
 
-    return to_public_user(user), token
+    fresh = user_model.get_user_by_id(user["id"])
+    return to_public_user(fresh), token
 
 
 def login(data):
@@ -107,7 +178,21 @@ def login(data):
 
     email_clean = email.strip().lower()
     user = user_model.get_user_by_email(email_clean)
+
+    locked_until = _parse_iso(user.get("locked_until")) if user else None
+    if locked_until and _now() < locked_until:
+        minutes_left = max(1, int((locked_until - _now()).total_seconds() // 60) + 1)
+        activity_log_model.log(user["id"], "Login rejected (account locked)", entity_type="security")
+        raise AuthError(
+            f"Too many failed attempts. Try again in {minutes_left} minute(s).", 429
+        )
+
     if user is None or not check_password_hash(user["password_hash"], password):
+        if user is not None:
+            attempts = user_model.register_failed_login(user["id"])
+            if attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+                new_lock = (_now() + LOCKOUT_DURATION).strftime("%Y-%m-%d %H:%M:%S")
+                user_model.register_failed_login(user["id"], locked_until=new_lock)
         activity_log_model.log(
             user["id"] if user else None,
             "Failed login attempt",
@@ -123,17 +208,31 @@ def login(data):
     if is_maintenance_mode() and not user.get("is_admin"):
         raise AuthError("The platform is temporarily down for maintenance", 503)
 
-    # Cheap (one COUNT) and idempotent — see book_model.ensure_default_book.
-    # Doing it here as well as on registration means accounts created before
-    # Books existed get their book on their next login.
-    book_model.ensure_default_book(user["id"])
+    result = _issue_session(user)
+    if result.get("requires_two_factor"):
+        activity_log_model.log(user["id"], "Password verified, awaiting 2FA code", entity_type="security")
+        return result
 
-    token = secrets.token_hex(32)
-    user_model.set_user_token(user["id"], token)
-    user_model.record_login(user["id"], _now_iso())
     activity_log_model.log(user["id"], "Logged in")
+    return result
 
-    return to_public_user(user), token
+
+def verify_two_factor(ticket, code):
+    user_id = _verify_2fa_ticket(ticket) if isinstance(ticket, str) else None
+    if user_id is None:
+        raise AuthError("This sign-in attempt has expired. Please log in again.", 401)
+
+    user = user_model.get_user_by_id(user_id)
+    if user is None or not user.get("totp_enabled"):
+        raise AuthError("This sign-in attempt has expired. Please log in again.", 401)
+
+    if not isinstance(code, str) or not pyotp.TOTP(user["totp_secret"]).verify(code.strip(), valid_window=1):
+        activity_log_model.log(user["id"], "Failed 2FA verification", entity_type="security")
+        raise AuthError("Invalid authentication code", 401)
+
+    result = _finish_login(user)
+    activity_log_model.log(user["id"], "Logged in (2FA)")
+    return result
 
 
 def _login_or_create_from_social(profile):
@@ -157,14 +256,13 @@ def _login_or_create_from_social(profile):
     if user.get("is_suspended"):
         raise AuthError("This account has been suspended", 403)
 
-    book_model.ensure_default_book(user["id"])
+    result = _issue_session(user)
+    if result.get("requires_two_factor"):
+        activity_log_model.log(user["id"], "Social sign-in verified, awaiting 2FA code", entity_type="security")
+        return result
 
-    token = secrets.token_hex(32)
-    user_model.set_user_token(user["id"], token)
-    user_model.record_login(user["id"], _now_iso())
     activity_log_model.log(user["id"], "Logged in via social sign-in")
-
-    return to_public_user(user), token
+    return result
 
 
 def login_with_google(access_token):
@@ -248,4 +346,57 @@ def logout(user):
 def get_user_from_token(token):
     if not token:
         return None
-    return user_model.get_user_by_token(token)
+    user = user_model.get_user_by_token(token)
+    if user is None:
+        return None
+
+    expires_at = _parse_iso(user.get("token_expires_at"))
+    if expires_at is not None and _now() >= expires_at:
+        # Expired: clear it so the dead token can't be reused, and treat
+        # this request as unauthenticated.
+        user_model.set_user_token(user["id"], None)
+        return None
+
+    # Sliding window: every authenticated request extends the session, so an
+    # actively-used token never expires mid-work.
+    new_expiry = (_now() + TOKEN_TTL).strftime("%Y-%m-%d %H:%M:%S")
+    user_model.touch_token_expiry(user["id"], new_expiry)
+    return user
+
+
+TOTP_ISSUER = "Hisaab"
+
+
+def setup_two_factor(user):
+    """Generates (and persists) a fresh TOTP secret for the user, not yet
+    enabled — `enable_two_factor` must verify a code against it first. Safe
+    to call again before enabling (e.g. user reloads the setup screen); each
+    call rotates the secret so only the most recently shown QR code works."""
+    secret = pyotp.random_base32()
+    user_model.set_totp_secret(user["id"], secret)
+    uri = pyotp.TOTP(secret).provisioning_uri(name=user["email"], issuer_name=TOTP_ISSUER)
+    return {"secret": secret, "otpauth_url": uri}
+
+
+def enable_two_factor(user, code):
+    secret = user.get("totp_secret")
+    if not secret:
+        raise AuthError("Start setup first", 400)
+    if not isinstance(code, str) or not pyotp.TOTP(secret).verify(code.strip(), valid_window=1):
+        raise AuthError("Invalid authentication code", 400)
+
+    updated = user_model.set_totp_enabled(user["id"], True)
+    activity_log_model.log(user["id"], "Enabled two-factor authentication")
+    return to_public_user(updated)
+
+
+def disable_two_factor(user, password, code):
+    if not isinstance(password, str) or not check_password_hash(user["password_hash"], password):
+        raise AuthError("Current password is incorrect", 401)
+    secret = user.get("totp_secret")
+    if secret and (not isinstance(code, str) or not pyotp.TOTP(secret).verify(code.strip(), valid_window=1)):
+        raise AuthError("Invalid authentication code", 400)
+
+    updated = user_model.set_totp_enabled(user["id"], False)
+    activity_log_model.log(user["id"], "Disabled two-factor authentication")
+    return to_public_user(updated)

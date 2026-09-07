@@ -67,13 +67,23 @@ function loadScript(src) {
   });
 }
 
-function SocialAuthButtons() {
+// onRequiresTwoFactor: called instead of navigating when the account has 2FA
+// on — the parent (Login page) switches to a code-entry step for the ticket.
+function SocialAuthButtons({ onRequiresTwoFactor }) {
   const [error, setError] = useState(null);
   const [loadingProvider, setLoadingProvider] = useState(null);
   const googleTokenClientRef = useRef(null);
   const facebookInitializedRef = useRef(false);
   const { loginWithGoogle, loginWithFacebook, loginWithFirebaseToken } = useAuth();
   const navigate = useNavigate();
+
+  function afterLogin(result) {
+    if (result.requires_two_factor) {
+      onRequiresTwoFactor?.(result.ticket);
+      return;
+    }
+    navigate("/transactions");
+  }
 
   async function handleGoogle() {
     setError(null);
@@ -85,8 +95,8 @@ function SocialAuthButtons() {
       setLoadingProvider("google");
       try {
         const idToken = await signInWithGooglePopup();
-        await loginWithFirebaseToken(idToken);
-        navigate("/transactions");
+        const result = await loginWithFirebaseToken(idToken);
+        afterLogin(result);
       } catch (err) {
         if (err.code === "auth/popup-closed-by-user") {
           setError("Google sign-in was cancelled.");
@@ -118,8 +128,8 @@ function SocialAuthButtons() {
               return;
             }
             try {
-              await loginWithGoogle(response.access_token);
-              navigate("/transactions");
+              const result = await loginWithGoogle(response.access_token);
+              afterLogin(result);
             } catch (err) {
               setError(err.message);
             } finally {
@@ -158,8 +168,8 @@ function SocialAuthButtons() {
             return;
           }
           try {
-            await loginWithFacebook(accessToken);
-            navigate("/transactions");
+            const result = await loginWithFacebook(accessToken);
+            afterLogin(result);
           } catch (err) {
             setError(err.message);
           } finally {

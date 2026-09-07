@@ -2,6 +2,7 @@ from functools import wraps
 
 from flask import Blueprint, g, jsonify, request
 
+from app.extensions import limiter
 from app.services import authz_service, auth_service
 from app.services.auth_service import AuthError
 
@@ -87,7 +88,17 @@ def require_super_admin(f):
     return wrapper
 
 
+def _session_response(result, message):
+    """Shared shape for every login path: either a completed session (user +
+    token) or a "give me your 2FA code" ticket for the client to complete via
+    /api/auth/2fa/verify."""
+    if result.get("requires_two_factor"):
+        return jsonify({"requires_two_factor": True, "ticket": result["ticket"]}), 200
+    return jsonify({"message": message, "user": result["user"], "token": result["token"]}), 200
+
+
 @auth_bp.route("/api/auth/register", methods=["POST"])
+@limiter.limit("10 per hour")
 def register():
     data = request.get_json(silent=True)
     try:
@@ -98,43 +109,58 @@ def register():
 
 
 @auth_bp.route("/api/auth/login", methods=["POST"])
+@limiter.limit("10 per minute")
 def login():
     data = request.get_json(silent=True)
     try:
-        user, token = auth_service.login(data)
+        result = auth_service.login(data)
     except AuthError as e:
         return jsonify({"error": e.message}), e.status_code
-    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+    return _session_response(result, "Logged in successfully")
+
+
+@auth_bp.route("/api/auth/2fa/verify", methods=["POST"])
+@limiter.limit("10 per minute")
+def two_factor_verify():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = auth_service.verify_two_factor(data.get("ticket"), data.get("code"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return _session_response(result, "Logged in successfully")
 
 
 @auth_bp.route("/api/auth/google", methods=["POST"])
+@limiter.limit("10 per minute")
 def google_login():
     data = request.get_json(silent=True) or {}
     try:
-        user, token = auth_service.login_with_google(data.get("accessToken"))
+        result = auth_service.login_with_google(data.get("accessToken"))
     except AuthError as e:
         return jsonify({"error": e.message}), e.status_code
-    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+    return _session_response(result, "Logged in successfully")
 
 
 @auth_bp.route("/api/auth/facebook", methods=["POST"])
+@limiter.limit("10 per minute")
 def facebook_login():
     data = request.get_json(silent=True) or {}
     try:
-        user, token = auth_service.login_with_facebook(data.get("accessToken"))
+        result = auth_service.login_with_facebook(data.get("accessToken"))
     except AuthError as e:
         return jsonify({"error": e.message}), e.status_code
-    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+    return _session_response(result, "Logged in successfully")
 
 
 @auth_bp.route("/api/auth/firebase", methods=["POST"])
+@limiter.limit("10 per minute")
 def firebase_login():
     data = request.get_json(silent=True) or {}
     try:
-        user, token = auth_service.login_with_firebase(data.get("idToken"))
+        result = auth_service.login_with_firebase(data.get("idToken"))
     except AuthError as e:
         return jsonify({"error": e.message}), e.status_code
-    return jsonify({"message": "Logged in successfully", "user": user, "token": token}), 200
+    return _session_response(result, "Logged in successfully")
 
 
 @auth_bp.route("/api/auth/me", methods=["GET"])
@@ -159,3 +185,32 @@ def update_me():
 def logout():
     auth_service.logout(g.current_user)
     return jsonify({"message": "Logged out successfully"}), 200
+
+
+@auth_bp.route("/api/auth/2fa/setup", methods=["POST"])
+@login_required
+def two_factor_setup():
+    data = auth_service.setup_two_factor(g.current_user)
+    return jsonify(data), 200
+
+
+@auth_bp.route("/api/auth/2fa/enable", methods=["POST"])
+@login_required
+def two_factor_enable():
+    data = request.get_json(silent=True) or {}
+    try:
+        user = auth_service.enable_two_factor(g.current_user, data.get("code"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Two-factor authentication enabled", "user": user}), 200
+
+
+@auth_bp.route("/api/auth/2fa/disable", methods=["POST"])
+@login_required
+def two_factor_disable():
+    data = request.get_json(silent=True) or {}
+    try:
+        user = auth_service.disable_two_factor(g.current_user, data.get("password"), data.get("code"))
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"message": "Two-factor authentication disabled", "user": user}), 200

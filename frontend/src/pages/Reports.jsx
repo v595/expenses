@@ -13,10 +13,20 @@ import {
   YAxis,
 } from "recharts";
 
+import Select from "../components/Select";
+import { IconDownload } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { getDashboardMonthly, getDashboardSummary } from "../services/api";
+import {
+  createRecurring,
+  getDashboardMonthly,
+  getDashboardSummary,
+  getDetectedSubscriptions,
+  getTransactions,
+} from "../services/api";
 import { categoryColor } from "../utils/categoryColor";
 import { formatMoney as formatMoneyIn } from "../utils/currency";
+import { downloadCategorySummaryCsv } from "../utils/downloadCsv";
+import { downloadReportPdf, getFinancialYearRange } from "../utils/downloadReportPdf";
 
 function monthLabel(monthStr) {
   const [year, month] = monthStr.split("-");
@@ -55,6 +65,11 @@ function Reports() {
   const [monthly, setMonthly] = useState(null);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
+  const currentFyStart = new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+  const [fyStartYear, setFyStartYear] = useState(currentFyStart);
+  const [exporting, setExporting] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [trackingKey, setTrackingKey] = useState(null);
 
   useEffect(() => {
     Promise.all([getDashboardMonthly(token), getDashboardSummary(token)])
@@ -63,7 +78,34 @@ function Reports() {
         setSummary(summaryData);
       })
       .catch((err) => setError(err.message));
+    getDetectedSubscriptions(token)
+      .then(setSubscriptions)
+      .catch(() => {}); // non-critical — the rest of the page still works without it
   }, [token]);
+
+  async function handleTrackSubscription(sub) {
+    const key = `${sub.description}::${sub.amount}`;
+    setTrackingKey(key);
+    setError(null);
+    try {
+      await createRecurring(
+        {
+          amount: sub.amount,
+          type: "expense",
+          category: sub.category,
+          description: sub.description,
+          frequency: "monthly",
+          start_date: new Date().toISOString().slice(0, 10),
+        },
+        token
+      );
+      setSubscriptions((prev) => prev.filter((s) => `${s.description}::${s.amount}` !== key));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTrackingKey(null);
+    }
+  }
 
   if (error) return <p className="page error-message">{error}</p>;
   if (!monthly || !summary) return <p className="page loading-state">Loading reports...</p>;
@@ -80,6 +122,37 @@ function Reports() {
         </p>
       </div>
     );
+  }
+
+  const fyOptions = Array.from({ length: 6 }, (_, i) => currentFyStart - i).map((y) => ({
+    value: y,
+    label: `FY ${y}-${String(y + 1).slice(2)}`,
+  }));
+
+  async function handleExport(kind) {
+    setExporting(true);
+    setError(null);
+    try {
+      const range = getFinancialYearRange(fyStartYear);
+      const transactions = await getTransactions(token, range);
+      const fyLabel = `FY${fyStartYear}-${String(fyStartYear + 1).slice(2)}`;
+      if (kind === "pdf") {
+        downloadReportPdf({
+          period: "fy",
+          userName: user.name,
+          transactions,
+          range,
+          currency: user.currency,
+          fileName: `${fyLabel}-tax-summary.pdf`,
+        });
+      } else {
+        downloadCategorySummaryCsv(transactions, `${fyLabel}-category-summary.csv`);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setExporting(false);
+    }
   }
 
   const chartData = monthly.map((m) => ({
@@ -144,6 +217,80 @@ function Reports() {
           )}
         </div>
       </div>
+
+      <div className="card card-padded">
+        <div className="profile-card-head">
+          <h2 className="card-title">Tax / Financial Year Export</h2>
+          <p>Category totals and full transaction detail for one financial year (Apr–Mar), ready to hand to an accountant.</p>
+        </div>
+        {error && <p className="error-message">{error}</p>}
+        <div className="form-row" style={{ alignItems: "flex-end" }}>
+          <label style={{ maxWidth: 220 }}>
+            Financial Year
+            <Select
+              ariaLabel="Financial year"
+              value={fyStartYear}
+              onChange={(value) => setFyStartYear(Number(value))}
+              options={fyOptions}
+            />
+          </label>
+          <button type="button" className="btn-secondary" disabled={exporting} onClick={() => handleExport("csv")}>
+            <IconDownload width={16} height={16} />
+            Category Summary (CSV)
+          </button>
+          <button type="button" disabled={exporting} onClick={() => handleExport("pdf")}>
+            <IconDownload width={16} height={16} />
+            {exporting ? "Preparing..." : "Full Tax Report (PDF)"}
+          </button>
+        </div>
+      </div>
+
+      {subscriptions.length > 0 && (
+        <div className="card card-padded">
+          <div className="profile-card-head">
+            <h2 className="card-title">Subscription Radar</h2>
+            <p>Charges that look recurring but aren't tracked as a Recurring rule yet.</p>
+          </div>
+          <div className="table-scroll">
+            <table className="transaction-list">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Seen</th>
+                  <th>Est. yearly</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptions.map((sub) => {
+                  const key = `${sub.description}::${sub.amount}`;
+                  return (
+                    <tr key={key}>
+                      <td>{sub.description}</td>
+                      <td>{sub.category}</td>
+                      <td className="amount-cell expense">{formatMoney(sub.amount)}</td>
+                      <td>{sub.months_seen}mo</td>
+                      <td className="amount-cell expense">{formatMoney(sub.estimated_yearly_cost)}</td>
+                      <td className="row-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={trackingKey === key}
+                          onClick={() => handleTrackSubscription(sub)}
+                        >
+                          {trackingKey === key ? "Adding..." : "Track as Recurring"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

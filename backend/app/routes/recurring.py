@@ -22,6 +22,18 @@ def create_recurring():
     return jsonify({"message": "Recurring transaction created", "recurring": rule}), 201
 
 
+@recurring_bp.route("/api/recurring/<int:recurring_id>", methods=["PUT"])
+@login_required
+def update_recurring(recurring_id):
+    try:
+        rule = recurring_service.update_recurring(
+            recurring_id, g.current_user["id"], request.get_json(silent=True)
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "Recurring transaction updated", "recurring": rule}), 200
+
+
 @recurring_bp.route("/api/recurring/<int:recurring_id>", methods=["DELETE"])
 @login_required
 def delete_recurring(recurring_id):

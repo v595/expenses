@@ -1,9 +1,9 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-from app.config import Config
+from app.config import DEV_SECRET_KEY, Config
 from app.database import get_sqlalchemy_uri
-from app.extensions import db, migrate
+from app.extensions import db, limiter, migrate
 from app.routes.accounts import accounts_bp
 from app.routes.activity import activity_bp
 from app.routes.admin import admin_bp
@@ -15,6 +15,7 @@ from app.routes.budgets import budgets_bp
 from app.routes.cashbook import cashbook_bp
 from app.routes.categories import categories_bp
 from app.routes.dashboard import dashboard_bp
+from app.routes.debts import debts_bp
 from app.routes.goals import goals_bp
 from app.routes.health import health_bp
 from app.routes.ledger import ledger_bp
@@ -83,8 +84,18 @@ def create_app():
     app.config.from_object(Config)
     app.config["SQLALCHEMY_DATABASE_URI"] = get_sqlalchemy_uri()
 
-    # Allow the React dev server (running on a different port) to call this API.
-    CORS(app)
+    if not app.config["DEBUG"] and app.config["SECRET_KEY"] == DEV_SECRET_KEY:
+        raise RuntimeError(
+            "SECRET_KEY is unset in a non-debug environment — set the SECRET_KEY "
+            "env var before starting the app (auth tokens and the 2FA login "
+            "ticket are signed with it)."
+        )
+
+    # In dev (no CORS_ORIGINS set) allow every origin, same as before, so the
+    # React dev server on any port can call this API. In production this
+    # should always be the exact deployed frontend origin(s).
+    CORS(app, origins=app.config["CORS_ORIGINS"] or "*")
+    limiter.init_app(app)
 
     db.init_app(app)
     migrate.init_app(app, db, directory="migrations")
@@ -105,6 +116,7 @@ def create_app():
     app.register_blueprint(categories_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(goals_bp)
+    app.register_blueprint(debts_bp)
     app.register_blueprint(bills_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(tags_bp)

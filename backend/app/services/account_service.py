@@ -1,7 +1,10 @@
 from app.models import account as account_model
 from app.models import activity_log as activity_log_model
 
-VALID_TYPES = ("cash", "bank", "card", "savings", "other")
+VALID_TYPES = ("cash", "bank", "card", "savings", "investment", "loan", "other")
+# Which of the above count as a liability for net worth (assets - liabilities)
+# rather than an asset. Everything else is treated as an asset.
+LIABILITY_TYPES = ("loan",)
 MAX_NAME_LENGTH = 60
 
 
@@ -48,6 +51,32 @@ def update_account(account_id, user_id, data):
         raise ValueError("Account not found")
     activity_log_model.log(user_id, "Updated account", name)
     return updated
+
+
+def get_net_worth(user_id):
+    """Assets (cash/bank/card/savings/investment/other) minus liabilities
+    (loan) — a `loan` account's balance is "how much you still owe", entered
+    as a positive number and paid down over time the same way any other
+    account balance changes, so it subtracts here rather than adds."""
+    accounts = account_model.get_accounts_by_user(user_id)
+
+    by_type = {}
+    assets = 0.0
+    liabilities = 0.0
+    for account in accounts:
+        by_type.setdefault(account["type"], 0.0)
+        by_type[account["type"]] += account["balance"]
+        if account["type"] in LIABILITY_TYPES:
+            liabilities += account["balance"]
+        else:
+            assets += account["balance"]
+
+    return {
+        "assets": round(assets, 2),
+        "liabilities": round(liabilities, 2),
+        "net_worth": round(assets - liabilities, 2),
+        "by_type": {k: round(v, 2) for k, v in by_type.items()},
+    }
 
 
 def delete_account(account_id, user_id):
