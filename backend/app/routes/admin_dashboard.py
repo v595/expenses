@@ -180,7 +180,12 @@ def login():
                     ticket = auth_service.issue_2fa_ticket(user["id"])
                     return render_template("admin_login_2fa.html", ticket=ticket, error=None)
                 _establish_admin_session(user)
-                activity_log_model.log(user["id"], "Logged in to admin dashboard")
+                # entity_type="security" (not left null) so this shows up on
+                # the Audit Logs page's default "Admin actions" tab — that
+                # view filters to actor_id != user_id OR entity_type set, and
+                # a login has neither by default, so it silently vanished
+                # from the tab an admin actually lands on.
+                activity_log_model.log(user["id"], "Logged in to admin dashboard", entity_type="security")
                 return redirect(url_for("admin_dashboard.dashboard"))
             else:
                 error = "That account doesn't have admin access."
@@ -225,7 +230,7 @@ def login_2fa():
         )
 
     _establish_admin_session(user)
-    activity_log_model.log(user["id"], "Logged in to admin dashboard (2FA)")
+    activity_log_model.log(user["id"], "Logged in to admin dashboard (2FA)", entity_type="security")
     return redirect(url_for("admin_dashboard.dashboard"))
 
 
@@ -414,7 +419,7 @@ def user_activity(user_id):
 
 
 @admin_dashboard_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
-@dashboard_admin_required
+@dashboard_permission_required("users.delete")
 def delete_user(user_id):
     try:
         admin_service.delete_user(user_id, session[SESSION_KEY])

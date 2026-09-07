@@ -439,7 +439,10 @@ def send_test_notification(requesting_user):
         f"Sent from System Settings by {requesting_user['name']} at {timestamp} UTC.",
         f"admin_test:{timestamp}",
     )
-    activity_log_model.log(requesting_user["id"], "Sent test notification")
+    # entity_type set (not left null) so this shows up in the Audit Logs
+    # page's default "Admin actions" tab, same reasoning as the admin-login
+    # log calls in routes/admin_dashboard.py.
+    activity_log_model.log(requesting_user["id"], "Sent test notification", entity_type="admin_dashboard")
 
 
 def get_messaging_status():

@@ -290,3 +290,39 @@ def test_change_own_role_rejected(client):
             assert False, "expected ValueError"
         except ValueError as e:
             assert "own role" in str(e)
+
+
+def test_delete_user_requires_users_delete_permission(client):
+    """Regression test: /admin/users/<id>/delete used to be gated only by
+    dashboard_admin_required (any admin, no specific permission), unlike
+    every other mutating route. The default ADMIN role (migrations/0003)
+    does not grant users.delete, so a plain admin should be refused."""
+    from app.models import user as user_model
+    from app.services import admin_service
+
+    _login_dashboard(client)  # Alice = first user = SUPER_ADMIN
+
+    register(client, name="Bob", email="bob@example.com", password="secret123")
+    register(client, name="Carol", email="carol@example.com", password="secret123")
+
+    with client.application.app_context():
+        alice = user_model.get_user_by_email("alice@example.com")
+        bob = user_model.get_user_by_email("bob@example.com")
+        carol = user_model.get_user_by_email("carol@example.com")
+        admin_service.change_user_role(bob["id"], "ADMIN", alice)
+        carol_id = carol["id"]
+
+    # Switch the dashboard session to Bob, a plain ADMIN with no users.delete.
+    # /admin/login short-circuits straight back to the dashboard if a session
+    # already exists (see _establish_admin_session callers), so Alice's
+    # session has to be cleared first or this would silently keep deleting
+    # as her.
+    client.get("/admin/logout")
+    login = client.post("/admin/login", data={"email": "bob@example.com", "password": "secret123"})
+    assert login.status_code == 302
+
+    response = client.post(f"/admin/users/{carol_id}/delete")
+    assert response.status_code == 403
+
+    with client.application.app_context():
+        assert user_model.get_user_by_id(carol_id) is not None

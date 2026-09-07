@@ -54,10 +54,16 @@
     <script>
       // "Select all/none" only ever needs to touch the enabled checkboxes in
       // its own group — the Super Admin-only ones stay disabled regardless.
+      // data-group restarts at 0 for every role's set of groups (the index
+      // resets on each pass of the outer per-role loop above), so it's not
+      // unique across the whole page — document.querySelector('[data-group="0"]')
+      // always found the FIRST role's group 0, silently mutating a different
+      // role's checkboxes than the one the button visually sits under. Scope
+      // the lookup to this button's own .permission-group instead.
       document.querySelectorAll(".select-all-btn, .select-none-btn").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var checked = btn.classList.contains("select-all-btn");
-          var grid = document.querySelector('.checkbox-grid[data-group="' + btn.dataset.group + '"]');
+          var grid = btn.closest(".permission-group").querySelector(".checkbox-grid");
           grid.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(function (cb) {
             cb.checked = checked;
           });

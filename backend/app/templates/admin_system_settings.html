@@ -46,8 +46,8 @@
         <button type="submit" class="btn btn-secondary">Send test notification to myself</button>
       </form>
 
-      <div class="profile-card-head" style="margin-top: 1.5rem;">
-        <h2 class="card-title" style="margin: 0 0 0.5rem;">Messaging driver</h2>
+      <div class="card-header" style="margin-top: 1.5rem;">
+        <h2>Messaging driver</h2>
       </div>
       <table style="width: 100%; font-size: 0.85rem;">
         <thead>
@@ -73,12 +73,14 @@
         </tbody>
       </table>
 
-      <div class="profile-card-head" style="margin-top: 1.5rem;">
-        <h2 class="card-title" style="margin: 0 0 0.5rem;">Email driver</h2>
+      <div class="card-header" style="margin-top: 1.5rem;">
+        <h2>Email driver</h2>
       </div>
       <p style="font-size: 0.76rem; color: var(--muted); margin: 0 0 0.6rem;">
-        Used for password-reset emails. "console" just logs the email instead of sending it —
-        set EMAIL_DRIVER=smtp and SMTP_HOST/SMTP_USER/SMTP_PASSWORD to send real mail.
+        Used for the regular user-facing "forgot password" emails only — not this admin
+        dashboard's own reset link, which is always logged to the server console regardless of
+        this setting. "console" just logs the email instead of sending it — set EMAIL_DRIVER=smtp
+        and SMTP_HOST/SMTP_USER/SMTP_PASSWORD to send real mail.
       </p>
       <table style="width: 100%; font-size: 0.85rem;">
         <thead>
