@@ -1,7 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 
 from app.routes.auth import login_required
-from app.services import account_service
+from app.services import account_service, feature_flag_service
 
 accounts_bp = Blueprint("accounts", __name__)
 
@@ -25,6 +25,8 @@ def create_account():
 @accounts_bp.route("/api/accounts/net-worth", methods=["GET"])
 @login_required
 def net_worth():
+    if not feature_flag_service.is_enabled("net_worth"):
+        return jsonify({"error": "This feature is currently disabled"}), 404
     return jsonify(account_service.get_net_worth(g.current_user["id"])), 200
 
 

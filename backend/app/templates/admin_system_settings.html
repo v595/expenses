@@ -5,6 +5,7 @@
     <p class="page-subtitle">Platform-wide configuration.</p>
 
     {% if error %}<div class="banner error">{{ error }}</div>{% endif %}
+    {% if notice %}<div class="banner success">{{ notice }}</div>{% endif %}
     {% if settings.maintenance_mode == "true" %}
     <div class="banner warning">Maintenance mode is currently <strong>ON</strong> — non-admin users cannot log in or register.</div>
     {% endif %}
@@ -14,6 +15,7 @@
         <div>
           <label for="app_name">Application Name</label>
           <input type="text" id="app_name" name="app_name" value="{{ settings.app_name }}" {{ "disabled" if not can_manage else "" }} />
+          <p style="font-size: 0.76rem; color: var(--muted); margin: 0.3rem 0 0;">Shown as the brand name in the app's header and browser tab.</p>
         </div>
         <div>
           <label for="default_currency">Default Currency</label>
@@ -31,5 +33,44 @@
         <button type="submit" class="btn btn-primary">Save Settings</button>
         {% endif %}
       </form>
+    </div>
+
+    <div class="card" style="max-width: 480px;">
+      <div class="card-header">
+        <h2>Diagnostics</h2>
+      </div>
+      <p class="page-subtitle" style="margin-bottom: 0.9rem;">
+        Verify the notification pipeline actually works, end to end, without waiting for a real budget/bill alert.
+      </p>
+      <form method="post" action="{{ url_for('admin_dashboard.send_test_notification') }}">
+        <button type="submit" class="btn btn-secondary">Send test notification to myself</button>
+      </form>
+
+      <div class="profile-card-head" style="margin-top: 1.5rem;">
+        <h2 class="card-title" style="margin: 0 0 0.5rem;">Messaging driver</h2>
+      </div>
+      <table style="width: 100%; font-size: 0.85rem;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 0.4rem 0; color: var(--muted); font-weight: 600;">Driver</th>
+            <th style="text-align: left; padding: 0.4rem 0; color: var(--muted); font-weight: 600;">Configured</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for driver in messaging_status.drivers %}
+          <tr>
+            <td style="padding: 0.4rem 0;">
+              {{ driver.name }}
+              {% if driver.is_active %}<span class="badge admin" style="margin-left: 0.4rem;">Active</span>{% endif %}
+            </td>
+            <td style="padding: 0.4rem 0;">
+              <span class="badge {{ 'online' if driver.is_configured else 'offline' }}">
+                <span class="status-dot"></span>{{ "Yes" if driver.is_configured else "No" }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 {% endblock %}

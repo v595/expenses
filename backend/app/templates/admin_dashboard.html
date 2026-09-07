@@ -107,32 +107,62 @@
       </div>
     </div>
 
+    {% macro sort_link(label, column) %}
+      {% set args = request.args.to_dict() %}
+      {% set _ = args.update({'sort': column, 'dir': ('desc' if sort == column and direction == 'asc' else 'asc'), 'page': 1}) %}
+      <a class="sort-link" href="{{ url_for('admin_dashboard.dashboard', **args) }}">{{ label }}{% if sort == column %}<span class="sort-arrow">{{ '↓' if direction == 'desc' else '↑' }}</span>{% endif %}</a>
+    {% endmacro %}
+
     <div class="card">
       <div class="card-header">
         <h2>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
           Users
-          <span style="color: var(--muted); font-weight: 600; font-size: 0.82rem;">({{ users|length }})</span>
+          <span style="color: var(--muted); font-weight: 600; font-size: 0.82rem;">({{ total_users }})</span>
         </h2>
-        <form class="search-form" method="get">
+        <a class="btn btn-secondary" href="{{ url_for('admin_dashboard.export_users_csv', **request.args.to_dict()) }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </a>
+      </div>
+
+      <form class="filter-row" method="get">
+        <div class="search-form">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" name="q" value="{{ search }}" placeholder="Search name or email..." />
-          {% if search %}<a class="clear-link" href="{{ url_for('admin_dashboard.dashboard') }}">Clear</a>{% endif %}
-        </form>
-      </div>
+        </div>
+        <select name="role" class="filter-select">
+          <option value="">All roles</option>
+          {% for r in role_names %}
+          <option value="{{ r }}" {{ "selected" if role_filter == r else "" }}>{{ r }}</option>
+          {% endfor %}
+        </select>
+        <select name="status" class="filter-select">
+          <option value="">All statuses</option>
+          <option value="online" {{ "selected" if status_filter == "online" else "" }}>Online</option>
+          <option value="offline" {{ "selected" if status_filter == "offline" else "" }}>Offline</option>
+          <option value="suspended" {{ "selected" if status_filter == "suspended" else "" }}>Suspended</option>
+        </select>
+        <input type="hidden" name="sort" value="{{ sort }}" />
+        <input type="hidden" name="dir" value="{{ direction }}" />
+        <button type="submit" class="btn btn-secondary">Filter</button>
+        {% if search or role_filter or status_filter %}
+        <a class="clear-link" href="{{ url_for('admin_dashboard.dashboard') }}">Clear</a>
+        {% endif %}
+      </form>
 
       {% if users %}
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>User</th>
-              <th>Joined</th>
-              <th>Last Login</th>
+              <th>{{ sort_link("User", "name") }}</th>
+              <th>{{ sort_link("Joined", "joined") }}</th>
+              <th>{{ sort_link("Last Login", "last_login") }}</th>
               <th>Status</th>
-              <th>Transactions</th>
-              <th>Income</th>
-              <th>Expenses</th>
+              <th>{{ sort_link("Transactions", "transactions") }}</th>
+              <th>{{ sort_link("Income", "income") }}</th>
+              <th>{{ sort_link("Expenses", "expenses") }}</th>
               <th></th>
             </tr>
           </thead>
@@ -169,6 +199,13 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </a>
                   {% if u.id != current_admin_id %}
+                  <form class="inline-form role-form" method="post" action="{{ url_for('admin_dashboard.change_user_role', user_id=u.id) }}" onsubmit="return confirm('Change ' + {{ u.name|tojson }} + '\'s role to ' + this.role.value + '?');">
+                    <select name="role" class="role-select" onchange="this.form.requestSubmit()" title="Change role">
+                      {% for r in role_names %}
+                      <option value="{{ r }}" {{ "selected" if (u.role_name or 'USER') == r else "" }}>{{ r }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
                   {% if u.is_suspended %}
                   <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.activate_user', user_id=u.id) }}">
                     <button type="submit" class="icon-btn icon-btn-neutral" title="Reactivate user">
@@ -182,11 +219,15 @@
                     </button>
                   </form>
                   {% endif %}
-                  <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete this user and all of their data?');">
-                    <button type="submit" class="icon-btn" title="Delete user">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    class="icon-btn js-confirm-delete"
+                    title="Delete user"
+                    data-name="{{ u.name }}"
+                    data-action="{{ url_for('admin_dashboard.delete_user', user_id=u.id) }}"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
                   {% endif %}
                 </div>
               </td>
@@ -195,11 +236,36 @@
           </tbody>
         </table>
       </div>
+
+      {% if total_pages > 1 %}
+      <div class="pagination">
+        {% set prev_args = request.args.to_dict() %}
+        {% set _ = prev_args.update({'page': page - 1}) %}
+        {% set next_args = request.args.to_dict() %}
+        {% set _ = next_args.update({'page': page + 1}) %}
+        {% if page > 1 %}<a class="btn btn-secondary" href="{{ url_for('admin_dashboard.dashboard', **prev_args) }}">&larr; Prev</a>{% endif %}
+        <span class="page-label">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}<a class="btn btn-secondary" href="{{ url_for('admin_dashboard.dashboard', **next_args) }}">Next &rarr;</a>{% endif %}
+      </div>
+      {% endif %}
       {% else %}
       <div class="empty-state">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <p>No users match "{{ search }}".</p>
+        <p>No users match these filters.</p>
       </div>
       {% endif %}
     </div>
+{% endblock %}
+
+{% block extra_style %}
+<style>
+  .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .filter-select { padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.85rem; background: var(--bg); font-family: inherit; }
+  .filter-select:focus { outline: none; border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .sort-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; }
+  .sort-link:hover { color: var(--brand); }
+  .sort-arrow { font-size: 0.7rem; }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.25rem; }
+  .page-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+</style>
 {% endblock %}

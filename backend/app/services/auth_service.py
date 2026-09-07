@@ -36,11 +36,11 @@ def _serializer():
     return URLSafeTimedSerializer(Config.SECRET_KEY)
 
 
-def _issue_2fa_ticket(user_id):
+def issue_2fa_ticket(user_id):
     return _serializer().dumps({"user_id": user_id}, salt=_TWO_FA_SALT)
 
 
-def _verify_2fa_ticket(ticket):
+def verify_2fa_ticket(ticket):
     try:
         data = _serializer().loads(ticket, salt=_TWO_FA_SALT, max_age=TWO_FA_TICKET_TTL_SECONDS)
     except (BadSignature, SignatureExpired):
@@ -124,7 +124,7 @@ def _issue_session(user):
     has 2FA turned on, no token is issued yet — the caller gets a short-lived
     ticket instead and must complete `verify_two_factor` with a TOTP code."""
     if user.get("totp_enabled"):
-        return {"requires_two_factor": True, "ticket": _issue_2fa_ticket(user["id"])}
+        return {"requires_two_factor": True, "ticket": issue_2fa_ticket(user["id"])}
 
     return _finish_login(user)
 
@@ -217,8 +217,17 @@ def login(data):
     return result
 
 
+def verify_totp_code(user, code):
+    """Shared by every 2FA check point (bearer-token login, admin dashboard
+    login, enable/disable) — the one place that knows how to check a code
+    against a user's secret."""
+    return bool(user.get("totp_secret")) and pyotp.TOTP(user["totp_secret"]).verify(
+        (code or "").strip() if isinstance(code, str) else "", valid_window=1
+    )
+
+
 def verify_two_factor(ticket, code):
-    user_id = _verify_2fa_ticket(ticket) if isinstance(ticket, str) else None
+    user_id = verify_2fa_ticket(ticket) if isinstance(ticket, str) else None
     if user_id is None:
         raise AuthError("This sign-in attempt has expired. Please log in again.", 401)
 
@@ -226,7 +235,7 @@ def verify_two_factor(ticket, code):
     if user is None or not user.get("totp_enabled"):
         raise AuthError("This sign-in attempt has expired. Please log in again.", 401)
 
-    if not isinstance(code, str) or not pyotp.TOTP(user["totp_secret"]).verify(code.strip(), valid_window=1):
+    if not verify_totp_code(user, code):
         activity_log_model.log(user["id"], "Failed 2FA verification", entity_type="security")
         raise AuthError("Invalid authentication code", 401)
 

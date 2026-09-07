@@ -54,3 +54,17 @@ def send(phone, message, driver=None):
     wa.me URL for the default driver and None for anything that really sends.
     Raises MessagingError if the driver isn't usable."""
     return get_driver(driver).send(phone, message)
+
+
+def status():
+    """Read-only diagnostic for the admin dashboard: which driver is active,
+    and whether every registered driver currently has what it needs to send
+    — never actually sends anything."""
+    active = get_driver_name()
+    return {
+        "active_driver": active,
+        "drivers": [
+            {"name": name, "is_active": name == active, "is_configured": module.is_configured()}
+            for name, module in sorted(DRIVERS.items())
+        ],
+    }

@@ -1,18 +1,44 @@
 {% extends "admin_base.html" %}
 {% block title %}Security Events{% endblock %}
 {% block content %}
-    <h1 class="page-title">Security Events</h1>
-    <p class="page-subtitle">{{ entries|length }} events — currently: failed login attempts and suspended-account login rejections.</p>
+    <div class="card-header" style="margin-bottom: 1.5rem;">
+      <div>
+        <h1 class="page-title" style="margin-bottom: 0.2rem;">Security Events</h1>
+        <p class="page-subtitle" style="margin: 0;">{{ total }} events — failed logins, 2FA failures, and suspended-account rejections.</p>
+      </div>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard.export_security_events_csv', **request.args.to_dict()) }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+    </div>
+
+    <form class="filter-row" method="get">
+      <div class="search-form">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" name="q" value="{{ search }}" placeholder="Search event, detail, or user..." />
+      </div>
+      <label style="font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem;">
+        From <input type="date" name="start_date" value="{{ start_date }}" class="filter-select" style="padding: 0.4rem 0.6rem;" />
+      </label>
+      <label style="font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem;">
+        To <input type="date" name="end_date" value="{{ end_date }}" class="filter-select" style="padding: 0.4rem 0.6rem;" />
+      </label>
+      <button type="submit" class="btn btn-secondary">Filter</button>
+      {% if search or start_date or end_date %}
+      <a class="clear-link" href="{{ url_for('admin_dashboard.security_events') }}">Clear</a>
+      {% endif %}
+    </form>
 
     <div class="card">
       {% if entries %}
       <div class="table-scroll">
         <table>
-          <thead><tr><th>When</th><th>Event</th><th>Detail</th></tr></thead>
+          <thead><tr><th>When</th><th>User</th><th>Event</th><th>Detail</th></tr></thead>
           <tbody>
             {% for e in entries %}
             <tr>
               <td>{{ e.time_label }}</td>
+              <td class="user-email">{{ e.user_name or "—" }}</td>
               <td class="user-name">{{ e.action }}</td>
               <td class="user-email">{{ e.details or "" }}</td>
             </tr>
@@ -20,8 +46,29 @@
           </tbody>
         </table>
       </div>
+      {% if total_pages > 1 %}
+      <div class="pagination">
+        {% set prev_args = request.args.to_dict() %}
+        {% set _ = prev_args.update({'page': page - 1}) %}
+        {% set next_args = request.args.to_dict() %}
+        {% set _ = next_args.update({'page': page + 1}) %}
+        {% if page > 1 %}<a class="btn btn-secondary" href="{{ url_for('admin_dashboard.security_events', **prev_args) }}">&larr; Prev</a>{% endif %}
+        <span class="page-label">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}<a class="btn btn-secondary" href="{{ url_for('admin_dashboard.security_events', **next_args) }}">Next &rarr;</a>{% endif %}
+      </div>
+      {% endif %}
       {% else %}
       <p class="empty-note">No security events recorded yet.</p>
       {% endif %}
     </div>
+{% endblock %}
+
+{% block extra_style %}
+<style>
+  .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .filter-select { border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.85rem; background: var(--bg); font-family: inherit; }
+  .filter-select:focus { outline: none; border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.25rem; }
+  .page-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+</style>
 {% endblock %}

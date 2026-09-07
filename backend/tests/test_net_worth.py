@@ -1,4 +1,5 @@
 from conftest import auth_headers
+from app.services import feature_flag_service
 
 
 def _add_account(client, headers, name, type_, balance):
@@ -36,3 +37,25 @@ def test_account_accepts_investment_and_loan_types(client):
     assert response.status_code == 201
     response = _add_account(client, headers, "Mortgage", "loan", 200000)
     assert response.status_code == 201
+
+
+def test_net_worth_returns_404_when_feature_flag_disabled(client):
+    headers = auth_headers(client)
+    with client.application.app_context():
+        feature_flag_service.set_enabled("net_worth", False, actor_id=None)
+    try:
+        response = client.get("/api/accounts/net-worth", headers=headers)
+        assert response.status_code == 404
+    finally:
+        with client.application.app_context():
+            feature_flag_service.set_enabled("net_worth", True, actor_id=None)
+
+
+def test_feature_flags_endpoint_lists_shipped_flags_enabled(client):
+    headers = auth_headers(client)
+    response = client.get("/api/feature-flags", headers=headers)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["net_worth"] is True
+    assert data["receipt_scanner"] is True
+    assert data["ai_assistant"] is False  # not built yet, stays off

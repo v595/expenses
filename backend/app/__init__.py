@@ -16,6 +16,7 @@ from app.routes.cashbook import cashbook_bp
 from app.routes.categories import categories_bp
 from app.routes.dashboard import dashboard_bp
 from app.routes.debts import debts_bp
+from app.routes.feature_flags import feature_flags_bp
 from app.routes.goals import goals_bp
 from app.routes.health import health_bp
 from app.routes.ledger import ledger_bp
@@ -121,6 +122,7 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(tags_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(feature_flags_bp)
     app.register_blueprint(books_bp)
     app.register_blueprint(parties_bp)
     app.register_blueprint(ledger_bp)

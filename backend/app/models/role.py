@@ -44,6 +44,10 @@ def list_all_permissions():
 
 
 def set_role_permissions(role_id, permission_keys):
+    # Local import: authz_service imports this module at load time, so an
+    # import up top here would be circular.
+    from app.services.authz_service import SUPER_ADMIN_ONLY
+
     role = db.session.get(Role, role_id)
     if role is None:
         return None
@@ -51,7 +55,12 @@ def set_role_permissions(role_id, permission_keys):
         # Always has every permission — never editable, so it can't be
         # accidentally (or maliciously) downgraded via this endpoint.
         return None
-    permissions = db.session.query(Permission).filter(Permission.key.in_(permission_keys)).all()
+    # A SUPER_ADMIN_ONLY key is unreachable for any other role no matter what
+    # is stored here (authz_service.has_permission enforces that separately)
+    # — dropping it here too keeps the stored grants honest about what
+    # actually works, instead of silently keeping a phantom entry around.
+    keys = set(permission_keys) - SUPER_ADMIN_ONLY
+    permissions = db.session.query(Permission).filter(Permission.key.in_(keys)).all()
     role.permissions = permissions
     db.session.commit()
     return role.to_dict()

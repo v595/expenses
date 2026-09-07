@@ -1,8 +1,9 @@
 {% extends "admin_base.html" %}
 {% block title %}Roles & Permissions{% endblock %}
 {% block content %}
+    {% set total_permissions = permission_groups|map(attribute="permissions")|map("length")|sum %}
     <h1 class="page-title">Roles & Permissions</h1>
-    <p class="page-subtitle">{{ role_list|length }} roles, {{ all_permissions|length }} permission keys.</p>
+    <p class="page-subtitle">{{ role_list|length }} roles, {{ total_permissions }} permission keys.</p>
 
     {% for role in role_list %}
     <div class="card">
@@ -16,14 +17,32 @@
       {% else %}
       <form method="post">
         <input type="hidden" name="role_id" value="{{ role.id }}" />
-        <div class="checkbox-grid">
-          {% for key in all_permissions %}
-          <label class="checkbox-item">
-            <input type="checkbox" name="permission" value="{{ key }}" {{ "checked" if key in role.permissions else "" }} {{ "disabled" if not can_manage else "" }} />
-            {{ key }}
-          </label>
-          {% endfor %}
+        {% for group in permission_groups %}
+        <div class="permission-group">
+          <div class="permission-group-head">
+            <span class="permission-group-label">{{ group.label }}</span>
+            {% if can_manage %}
+            <button type="button" class="link-btn-sm select-all-btn" data-group="{{ loop.index0 }}">Select all</button>
+            <button type="button" class="link-btn-sm select-none-btn" data-group="{{ loop.index0 }}">Select none</button>
+            {% endif %}
+          </div>
+          <div class="checkbox-grid" data-group="{{ loop.index0 }}">
+            {% for perm in group.permissions %}
+            <label class="checkbox-item {{ 'super-admin-only' if perm.super_admin_only else '' }}" title="{{ 'Always Super Admin only — this role can never use it, no matter what you check here' if perm.super_admin_only else '' }}">
+              <input
+                type="checkbox"
+                name="permission"
+                value="{{ perm.key }}"
+                {{ "checked" if perm.key in role.permissions else "" }}
+                {{ "disabled" if not can_manage or perm.super_admin_only else "" }}
+              />
+              {{ perm.key }}
+              {% if perm.super_admin_only %}<span class="super-admin-tag">Super Admin only</span>{% endif %}
+            </label>
+            {% endfor %}
+          </div>
         </div>
+        {% endfor %}
         {% if can_manage %}
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save {{ role.name }} permissions</button>
         {% endif %}
@@ -31,4 +50,33 @@
       {% endif %}
     </div>
     {% endfor %}
+
+    <script>
+      // "Select all/none" only ever needs to touch the enabled checkboxes in
+      // its own group — the Super Admin-only ones stay disabled regardless.
+      document.querySelectorAll(".select-all-btn, .select-none-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var checked = btn.classList.contains("select-all-btn");
+          var grid = document.querySelector('.checkbox-grid[data-group="' + btn.dataset.group + '"]');
+          grid.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(function (cb) {
+            cb.checked = checked;
+          });
+        });
+      });
+    </script>
+{% endblock %}
+
+{% block extra_style %}
+<style>
+  .permission-group { margin-bottom: 1.4rem; }
+  .permission-group:last-of-type { margin-bottom: 0; }
+  .permission-group-head { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.6rem; }
+  .permission-group-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .link-btn-sm { background: none; border: none; padding: 0; font-size: 0.76rem; font-weight: 600; color: var(--brand); cursor: pointer; text-decoration: underline; }
+  .checkbox-item.super-admin-only { opacity: 0.55; }
+  .super-admin-tag {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: var(--brand-soft); color: var(--brand); padding: 0.1rem 0.4rem; border-radius: 999px; margin-left: 0.35rem;
+  }
+</style>
 {% endblock %}

@@ -92,6 +92,13 @@ def update_name(user_id, name):
     return user.to_dict()
 
 
+def update_email(user_id, email):
+    user = db.session.get(User, user_id)
+    user.email = email
+    db.session.commit()
+    return user.to_dict()
+
+
 def update_avatar(user_id, avatar):
     user = db.session.get(User, user_id)
     user.avatar = avatar

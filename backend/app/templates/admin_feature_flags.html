@@ -1,18 +1,30 @@
 {% extends "admin_base.html" %}
 {% block title %}Feature Flags{% endblock %}
 {% block content %}
+    {% set live_flags = ("net_worth", "receipt_scanner") %}
     <h1 class="page-title">Feature Flags</h1>
-    <p class="page-subtitle">Toggle platform features on/off. These flags currently exist as data-backed toggles — none of the listed features are built yet, so there is nothing to enable in the app itself.</p>
+    <p class="page-subtitle">
+      Toggle platform features on/off. "Live" flags actually gate a real feature server-side (turning one off
+      makes the app behave as if it doesn't exist) — the rest are placeholders for features not built yet, so
+      toggling them has no visible effect.
+    </p>
 
     <div class="card">
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Feature</th><th>Description</th><th>Status</th>{% if can_manage %}<th></th>{% endif %}</tr></thead>
+          <thead><tr><th>Feature</th><th>Description</th><th>Wired</th><th>Status</th>{% if can_manage %}<th></th>{% endif %}</tr></thead>
           <tbody>
             {% for flag in flags %}
             <tr>
               <td class="user-name">{{ flag.name }}</td>
               <td class="user-email">{{ flag.description }}</td>
+              <td>
+                {% if flag.key in live_flags %}
+                <span class="badge admin">Live</span>
+                {% else %}
+                <span class="badge offline">Not built</span>
+                {% endif %}
+              </td>
               <td>
                 <span class="badge {{ 'online' if flag.is_enabled else 'offline' }}">
                   <span class="status-dot"></span>{{ "On" if flag.is_enabled else "Off" }}

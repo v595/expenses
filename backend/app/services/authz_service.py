@@ -67,6 +67,45 @@ SUPER_ADMIN_ONLY = {
     "system_health.view",
 }
 
+# How the Roles & Permissions editor groups the flat PERMISSIONS tuple into
+# scannable sections, mirroring the admin sidebar's own section labels.
+# Every key in PERMISSIONS must appear in exactly one group here — a mismatch
+# would silently drop a permission from the editor.
+PERMISSION_GROUPS = (
+    (
+        "User data",
+        (
+            "users.view", "users.create", "users.update", "users.suspend", "users.delete",
+            "transactions.view", "transactions.update", "transactions.delete",
+            "accounts.view", "budgets.view", "goals.view", "bills.view", "recurring.view",
+            "categories.view", "categories.create", "categories.update", "categories.delete",
+            "analytics.view", "reports.view", "notifications.manage",
+        ),
+    ),
+    ("Security", ("audit_logs.view",)),
+    ("Administration", ("admins.view", "admins.create", "admins.update", "admins.disable", "roles.view", "roles.manage")),
+    (
+        "System",
+        (
+            "permissions.view", "permissions.manage", "settings.view", "settings.manage",
+            "feature_flags.view", "feature_flags.manage", "system_health.view",
+        ),
+    ),
+)
+
+
+def grouped_permissions():
+    """PERMISSIONS bucketed into PERMISSION_GROUPS, each key annotated with
+    whether it's SUPER_ADMIN_ONLY — what the Roles & Permissions template
+    renders instead of one flat 30-checkbox grid."""
+    return [
+        {
+            "label": label,
+            "permissions": [{"key": key, "super_admin_only": key in SUPER_ADMIN_ONLY} for key in keys],
+        }
+        for label, keys in PERMISSION_GROUPS
+    ]
+
 
 def role_name(user):
     role_id = user.get("role_id") if user else None

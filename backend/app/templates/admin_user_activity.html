@@ -3,12 +3,45 @@
 {% block content %}
     <a class="clear-link" href="{{ url_for('admin_dashboard.dashboard') }}">&larr; Back to dashboard</a>
 
-    <div class="card" style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
+    <div class="card" style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
       <span class="avatar-circle" style="width: 52px; height: 52px; font-size: 1.2rem;">{{ target_user.name[:1]|upper }}</span>
-      <div>
-        <p class="page-title" style="margin: 0; font-size: 1.15rem;">{{ target_user.name }}</p>
+      <div style="flex: 1; min-width: 160px;">
+        <p class="page-title" style="margin: 0; font-size: 1.15rem;">
+          {{ target_user.name }}
+          {% if target_user.is_admin %}<span class="badge admin">{{ target_user.role_name or "Admin" }}</span>{% endif %}
+          {% if target_user.is_suspended %}<span class="badge suspended"><span class="status-dot"></span>Suspended</span>{% endif %}
+        </p>
         <p class="page-subtitle" style="margin: 0.15rem 0 0;">{{ target_user.email }}</p>
       </div>
+      {% if target_user.id != current_admin_id %}
+      <div class="row-actions">
+        <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.change_user_role', user_id=target_user.id) }}" onsubmit="return confirm('Change ' + {{ target_user.name|tojson }} + '\'s role to ' + this.role.value + '?');">
+          <select name="role" class="role-select" onchange="this.form.requestSubmit()" title="Change role">
+            {% for r in role_names %}
+            <option value="{{ r }}" {{ "selected" if (target_user.role_name or 'USER') == r else "" }}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        {% if target_user.is_suspended %}
+        <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.activate_user', user_id=target_user.id) }}">
+          <button type="submit" class="btn btn-secondary">Reactivate</button>
+        </form>
+        {% else %}
+        <form class="inline-form" method="post" action="{{ url_for('admin_dashboard.suspend_user', user_id=target_user.id) }}" onsubmit="return confirm('Suspend this user? They will be logged out immediately.');">
+          <button type="submit" class="btn btn-secondary">Suspend</button>
+        </form>
+        {% endif %}
+        <button
+          type="button"
+          class="btn btn-danger js-confirm-delete"
+          data-name="{{ target_user.name }}"
+          data-message="This permanently deletes the account and all of their data. This can't be undone."
+          data-action="{{ url_for('admin_dashboard.delete_user', user_id=target_user.id) }}"
+        >
+          Delete
+        </button>
+      </div>
+      {% endif %}
     </div>
 
     <div class="card">

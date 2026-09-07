@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block title %}Edit Admin{% endblock %}
+{% block content %}
+    <a class="clear-link" href="{{ url_for('admin_dashboard.admins') }}">&larr; Back to Admins</a>
+
+    <div class="card" style="margin-top: 1rem; max-width: 480px;">
+      <div class="card-header"><h2>Edit Admin Account</h2></div>
+
+      {% if error %}<div class="banner error">{{ error }}</div>{% endif %}
+
+      <form class="form-grid" method="post">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" value="{{ target.name }}" required />
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ target.email }}" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+    </div>
+{% endblock %}

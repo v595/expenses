@@ -6,9 +6,10 @@ from flask import Blueprint, current_app, redirect, render_template, request, se
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import limiter
+from app.models import activity_log as activity_log_model
 from app.models import role as role_model
 from app.models import user as user_model
-from app.services import admin_service, authz_service, feature_flag_service, system_settings_service
+from app.services import admin_service, auth_service, authz_service, feature_flag_service, system_settings_service
 from app.services.settings_service import ALLOWED_CURRENCIES
 
 admin_dashboard_bp = Blueprint("admin_dashboard", __name__)
@@ -145,6 +146,11 @@ def _render(template, active_nav, **context):
     )
 
 
+def _establish_admin_session(user):
+    session[SESSION_KEY] = user["id"]
+    user_model.record_login(user["id"], datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+
+
 @admin_dashboard_bp.route("/admin/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute", methods=["POST"])
 def login():
@@ -158,17 +164,69 @@ def login():
         user = user_model.get_user_by_email(email)
         if user and check_password_hash(user["password_hash"], password):
             if user.get("is_suspended"):
+                activity_log_model.log(
+                    user["id"], "Login rejected (account suspended)", entity_type="security"
+                )
                 error = "This account has been suspended."
             elif user.get("is_admin"):
-                session[SESSION_KEY] = user["id"]
-                user_model.record_login(user["id"], datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+                if user.get("totp_enabled"):
+                    # Password alone doesn't establish the session — the
+                    # admin dashboard must honor 2FA exactly like the main
+                    # app's login, since admin accounts are the highest-value
+                    # target in the whole system.
+                    activity_log_model.log(
+                        user["id"], "Admin password verified, awaiting 2FA code", entity_type="security"
+                    )
+                    ticket = auth_service.issue_2fa_ticket(user["id"])
+                    return render_template("admin_login_2fa.html", ticket=ticket, error=None)
+                _establish_admin_session(user)
+                activity_log_model.log(user["id"], "Logged in to admin dashboard")
                 return redirect(url_for("admin_dashboard.dashboard"))
             else:
                 error = "That account doesn't have admin access."
         else:
+            activity_log_model.log(
+                user["id"] if user else None,
+                "Failed admin login attempt",
+                email,
+                entity_type="security",
+            )
             error = "Invalid email or password."
 
     return render_template("admin_login.html", error=error)
+
+
+@admin_dashboard_bp.route("/admin/login/2fa", methods=["POST"])
+@limiter.limit("10 per minute")
+def login_2fa():
+    if session.get(SESSION_KEY):
+        return redirect(url_for("admin_dashboard.dashboard"))
+
+    ticket = request.form.get("ticket") or ""
+    code = request.form.get("code") or ""
+
+    user_id = auth_service.verify_2fa_ticket(ticket)
+    user = user_model.get_user_by_id(user_id) if user_id else None
+
+    if user is None or not user.get("totp_enabled"):
+        # The ticket expired (5 minutes) or was tampered with — send them
+        # back to start rather than showing a dead form with no way forward.
+        return render_template(
+            "admin_login_2fa.html", ticket=None, error="This sign-in attempt has expired. Please log in again."
+        )
+
+    if user.get("is_suspended") or not user.get("is_admin"):
+        return redirect(url_for("admin_dashboard.login"))
+
+    if not auth_service.verify_totp_code(user, code):
+        activity_log_model.log(user["id"], "Failed admin 2FA verification", entity_type="security")
+        return render_template(
+            "admin_login_2fa.html", ticket=ticket, error="Invalid authentication code."
+        )
+
+    _establish_admin_session(user)
+    activity_log_model.log(user["id"], "Logged in to admin dashboard (2FA)")
+    return redirect(url_for("admin_dashboard.dashboard"))
 
 
 @admin_dashboard_bp.route("/admin/logout")
@@ -224,12 +282,42 @@ def reset_password(token):
     return render_template("admin_reset_password.html", expired=False, error=error)
 
 
+def _user_list_params():
+    """Query params shared by the dashboard table and its CSV export, so
+    "export what I'm currently looking at" actually matches."""
+    search = (request.args.get("q") or "").strip()
+    role = (request.args.get("role") or "").strip().upper()
+    if role not in admin_service.VALID_ROLE_NAMES:
+        role = None
+    status = (request.args.get("status") or "").strip().lower()
+    if status not in ("online", "offline", "suspended"):
+        status = None
+    sort = request.args.get("sort") or "name"
+    if sort not in admin_service.USER_SORT_COLUMNS:
+        sort = "name"
+    direction = "desc" if request.args.get("dir") == "desc" else "asc"
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+    except ValueError:
+        page = 1
+    return {"search": search, "role": role, "status": status, "sort": sort, "direction": direction, "page": page}
+
+
 @admin_dashboard_bp.route("/admin")
 @dashboard_admin_required
 def dashboard():
-    search = (request.args.get("q") or "").strip()
+    params = _user_list_params()
     stats = admin_service.get_stats()
-    users = admin_service.list_users(search=search or None)
+    users = admin_service.list_users(
+        search=params["search"] or None,
+        role=params["role"],
+        status=params["status"],
+        sort=params["sort"],
+        direction=params["direction"],
+        page=params["page"],
+    )
+    total_users = admin_service.count_users(search=params["search"] or None, role=params["role"], status=params["status"])
+    total_pages = max((total_users + admin_service.USER_PAGE_SIZE - 1) // admin_service.USER_PAGE_SIZE, 1)
 
     for u in users:
         u["last_login_label"] = _time_ago(u["last_login_at"])
@@ -247,8 +335,65 @@ def dashboard():
         users=users,
         activity=activity,
         max_signups=max_signups,
-        search=search,
+        search=params["search"],
+        role_filter=params["role"] or "",
+        status_filter=params["status"] or "",
+        sort=params["sort"],
+        direction=params["direction"],
+        page=params["page"],
+        total_pages=total_pages,
+        total_users=total_users,
+        role_names=admin_service.VALID_ROLE_NAMES,
     )
+
+
+@admin_dashboard_bp.route("/admin/users/export.csv")
+@dashboard_admin_required
+def export_users_csv():
+    import csv
+    import io
+
+    params = _user_list_params()
+    users = admin_service.list_users_for_export(
+        search=params["search"] or None, role=params["role"], status=params["status"],
+        sort=params["sort"], direction=params["direction"],
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Name", "Email", "Role", "Joined", "Last Login", "Status", "Transactions", "Income", "Expenses"])
+    for u in users:
+        writer.writerow([
+            u["name"], u["email"], u["role_name"] or "USER", u["created_at"],
+            u["last_login_at"] or "Never",
+            "Suspended" if u["is_suspended"] else ("Online" if u["is_logged_in"] else "Offline"),
+            u["transaction_count"], f"{u['income']:.2f}", f"{u['expenses']:.2f}",
+        ])
+
+    response = current_app.response_class(buffer.getvalue(), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=users.csv"
+    return response
+
+
+def _redirect_back(fallback_endpoint, **fallback_args):
+    """Returns to wherever the action was triggered from (dashboard row,
+    or the user's own activity page) instead of always bouncing to one
+    fixed place — same-origin referrers only, to avoid an open redirect."""
+    referrer = request.referrer
+    if referrer and referrer.startswith(request.host_url):
+        return redirect(referrer)
+    return redirect(url_for(fallback_endpoint, **fallback_args))
+
+
+@admin_dashboard_bp.route("/admin/users/<int:user_id>/role", methods=["POST"])
+@dashboard_permission_required("users.update")
+def change_user_role(user_id):
+    current_admin = user_model.get_user_by_id(session[SESSION_KEY])
+    try:
+        admin_service.change_user_role(user_id, request.form.get("role", ""), current_admin)
+    except ValueError:
+        pass
+    return _redirect_back("admin_dashboard.dashboard", **request.args)
 
 
 @admin_dashboard_bp.route("/admin/users/<int:user_id>/activity")
@@ -262,7 +407,10 @@ def user_activity(user_id):
     for a in activity:
         a["time_label"] = _time_ago(a["created_at"])
 
-    return _render("admin_user_activity.html", "dashboard", target_user=user, activity=activity)
+    return _render(
+        "admin_user_activity.html", "dashboard", target_user=user, activity=activity,
+        role_names=admin_service.VALID_ROLE_NAMES,
+    )
 
 
 @admin_dashboard_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
@@ -283,7 +431,7 @@ def suspend_user(user_id):
         admin_service.suspend_user(user_id, current_admin)
     except ValueError:
         pass
-    return redirect(url_for("admin_dashboard.dashboard"))
+    return _redirect_back("admin_dashboard.dashboard")
 
 
 @admin_dashboard_bp.route("/admin/users/<int:user_id>/activate", methods=["POST"])
@@ -294,14 +442,54 @@ def activate_user(user_id):
         admin_service.activate_user(user_id, current_admin)
     except ValueError:
         pass
-    return redirect(url_for("admin_dashboard.dashboard"))
+    return _redirect_back("admin_dashboard.dashboard")
 
 
 @admin_dashboard_bp.route("/admin/admins")
 @dashboard_permission_required("admins.view")
 def admins():
     admin_list = admin_service.list_admins()
-    return _render("admin_admins.html", "admins", admins=admin_list, error=None)
+    return _render("admin_admins.html", "admins", admins=admin_list, error=None, reset_link=None, role_names=admin_service.VALID_ROLE_NAMES)
+
+
+@admin_dashboard_bp.route("/admin/admins/<int:user_id>/edit", methods=["GET", "POST"])
+@dashboard_permission_required("admins.update")
+def edit_admin(user_id):
+    current_admin = user_model.get_user_by_id(session[SESSION_KEY])
+    target = user_model.get_user_by_id(user_id)
+    if target is None or not target.get("is_admin"):
+        return redirect(url_for("admin_dashboard.admins"))
+
+    error = None
+    if request.method == "POST":
+        try:
+            admin_service.update_admin_profile(
+                user_id, request.form.get("name"), request.form.get("email"), current_admin
+            )
+            return redirect(url_for("admin_dashboard.admins"))
+        except ValueError as e:
+            error = str(e)
+            target = user_model.get_user_by_id(user_id)  # re-fetch in case name/email partially applied
+
+    return _render("admin_edit_admin.html", "admins", target=target, error=error)
+
+
+@admin_dashboard_bp.route("/admin/admins/<int:user_id>/reset-password", methods=["POST"])
+@dashboard_permission_required("admins.update")
+def reset_admin_password(user_id):
+    target = user_model.get_user_by_id(user_id)
+    if target is None or not target.get("is_admin"):
+        return redirect(url_for("admin_dashboard.admins"))
+
+    token = secrets.token_urlsafe(32)
+    _reset_tokens[token] = {"user_id": user_id, "expires": datetime.now(timezone.utc) + RESET_TOKEN_TTL}
+    reset_link = url_for("admin_dashboard.reset_password", token=token, _external=True)
+
+    admin_list = admin_service.list_admins()
+    return _render(
+        "admin_admins.html", "admins", admins=admin_list, error=None,
+        reset_link=reset_link, reset_link_for=target["name"], role_names=admin_service.VALID_ROLE_NAMES,
+    )
 
 
 @admin_dashboard_bp.route("/admin/admins/new", methods=["GET", "POST"])
@@ -371,7 +559,7 @@ def roles():
         "admin_roles.html",
         "roles",
         role_list=role_model.list_roles_with_counts(),
-        all_permissions=authz_service.PERMISSIONS,
+        permission_groups=authz_service.grouped_permissions(),
         can_manage=can_manage,
         error=error,
     )
@@ -407,6 +595,7 @@ def system_settings():
     current_admin = user_model.get_user_by_id(session[SESSION_KEY])
     can_manage = authz_service.has_permission(current_admin, "settings.manage")
     error = None
+    notice = None
 
     if request.method == "POST":
         if not can_manage:
@@ -420,6 +609,7 @@ def system_settings():
                 },
                 current_admin["id"],
             )
+            notice = "Settings saved."
         except ValueError as e:
             error = str(e)
 
@@ -429,30 +619,140 @@ def system_settings():
         settings=system_settings_service.get_all(),
         can_manage=can_manage,
         error=error,
+        notice=notice,
         currencies=ALLOWED_CURRENCIES,
+        messaging_status=admin_service.get_messaging_status(),
+    )
+
+
+@admin_dashboard_bp.route("/admin/diagnostics/test-notification", methods=["POST"])
+@dashboard_permission_required("settings.view")
+def send_test_notification():
+    current_admin = user_model.get_user_by_id(session[SESSION_KEY])
+    admin_service.send_test_notification(current_admin)
+    return _render(
+        "admin_system_settings.html",
+        "system-settings",
+        settings=system_settings_service.get_all(),
+        can_manage=authz_service.has_permission(current_admin, "settings.manage"),
+        error=None,
+        notice="Test notification sent — check the bell icon in the main app.",
+        currencies=ALLOWED_CURRENCIES,
+        messaging_status=admin_service.get_messaging_status(),
     )
 
 
 @admin_dashboard_bp.route("/admin/system-health")
 @dashboard_permission_required("system_health.view")
 def system_health():
-    return _render("admin_system_health.html", "system-health", health=admin_service.get_system_health())
+    checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return _render(
+        "admin_system_health.html", "system-health",
+        health=admin_service.get_system_health(), checked_at=checked_at,
+    )
+
+
+def _log_filter_params():
+    search = (request.args.get("q") or "").strip()
+    start_date = (request.args.get("start_date") or "").strip() or None
+    end_date = (request.args.get("end_date") or "").strip() or None
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+    except ValueError:
+        page = 1
+    return search, start_date, end_date, page
 
 
 @admin_dashboard_bp.route("/admin/audit-logs")
 @dashboard_permission_required("audit_logs.view")
 def audit_logs():
     admin_only = request.args.get("scope", "admin") == "admin"
-    entries = admin_service.get_audit_log(limit=200, admin_actions_only=admin_only)
+    search, start_date, end_date, page = _log_filter_params()
+    page_size = admin_service.AUDIT_LOG_PAGE_SIZE
+
+    entries = admin_service.get_audit_log(
+        limit=page_size, offset=(page - 1) * page_size, admin_actions_only=admin_only,
+        search=search or None, start_date=start_date, end_date=end_date,
+    )
     for e in entries:
         e["time_label"] = _time_ago(e["created_at"])
-    return _render("admin_audit_logs.html", "audit-logs", entries=entries, admin_only=admin_only)
+
+    total = admin_service.count_audit_log(
+        admin_actions_only=admin_only, search=search or None, start_date=start_date, end_date=end_date
+    )
+    total_pages = max((total + page_size - 1) // page_size, 1)
+
+    return _render(
+        "admin_audit_logs.html", "audit-logs", entries=entries, admin_only=admin_only,
+        search=search, start_date=start_date or "", end_date=end_date or "",
+        page=page, total_pages=total_pages, total=total,
+    )
+
+
+@admin_dashboard_bp.route("/admin/audit-logs/export.csv")
+@dashboard_permission_required("audit_logs.view")
+def export_audit_log_csv():
+    import csv
+    import io
+
+    admin_only = request.args.get("scope", "admin") == "admin"
+    search, start_date, end_date, _page = _log_filter_params()
+    entries = admin_service.get_audit_log(
+        limit=1_000_000, offset=0, admin_actions_only=admin_only,
+        search=search or None, start_date=start_date, end_date=end_date,
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["When", "User", "Action", "Details"])
+    for e in entries:
+        writer.writerow([e["created_at"], e.get("user_name") or "", e["action"], e.get("details") or ""])
+
+    response = current_app.response_class(buffer.getvalue(), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=audit-log.csv"
+    return response
 
 
 @admin_dashboard_bp.route("/admin/security-events")
 @dashboard_permission_required("audit_logs.view")
 def security_events():
-    entries = admin_service.get_security_events(limit=200)
+    search, start_date, end_date, page = _log_filter_params()
+    page_size = admin_service.AUDIT_LOG_PAGE_SIZE
+
+    entries = admin_service.get_security_events(
+        limit=page_size, offset=(page - 1) * page_size,
+        search=search or None, start_date=start_date, end_date=end_date,
+    )
     for e in entries:
         e["time_label"] = _time_ago(e["created_at"])
-    return _render("admin_security_events.html", "security-events", entries=entries)
+
+    total = admin_service.count_security_events(search=search or None, start_date=start_date, end_date=end_date)
+    total_pages = max((total + page_size - 1) // page_size, 1)
+
+    return _render(
+        "admin_security_events.html", "security-events", entries=entries,
+        search=search, start_date=start_date or "", end_date=end_date or "",
+        page=page, total_pages=total_pages, total=total,
+    )
+
+
+@admin_dashboard_bp.route("/admin/security-events/export.csv")
+@dashboard_permission_required("audit_logs.view")
+def export_security_events_csv():
+    import csv
+    import io
+
+    search, start_date, end_date, _page = _log_filter_params()
+    entries = admin_service.get_security_events(
+        limit=1_000_000, offset=0, search=search or None, start_date=start_date, end_date=end_date
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["When", "User", "Event", "Detail"])
+    for e in entries:
+        writer.writerow([e["created_at"], e.get("user_name") or "", e["action"], e.get("details") or ""])
+
+    response = current_app.response_class(buffer.getvalue(), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=security-events.csv"
+    return response

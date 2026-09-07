@@ -1,8 +1,17 @@
 {% extends "admin_base.html" %}
 {% block title %}System Health{% endblock %}
 {% block content %}
-    <h1 class="page-title">System Health</h1>
-    <p class="page-subtitle">Only checks that can actually be measured against this app's real infrastructure — no fabricated metrics.</p>
+    <div class="card-header" style="margin-bottom: 0.5rem;">
+      <div>
+        <h1 class="page-title" style="margin-bottom: 0.2rem;">System Health</h1>
+        <p class="page-subtitle" style="margin: 0;">Only checks that can actually be measured against this app's real infrastructure — no fabricated metrics.</p>
+      </div>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard.system_health') }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </a>
+    </div>
+    <p class="page-subtitle">Checked at {{ checked_at }}.</p>
 
     <div class="stat-grid">
       <div class="stat-card">
