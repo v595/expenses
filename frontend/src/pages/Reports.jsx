@@ -67,7 +67,10 @@ function Reports() {
   const [error, setError] = useState(null);
   const currentFyStart = new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1;
   const [fyStartYear, setFyStartYear] = useState(currentFyStart);
-  const [exporting, setExporting] = useState(false);
+  // Which export is in flight — null | "csv" | "pdf" — so the CSV and PDF
+  // buttons each show their own "Preparing..." state instead of the PDF
+  // button reacting to a CSV click and vice versa.
+  const [exporting, setExporting] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
   const [trackingKey, setTrackingKey] = useState(null);
 
@@ -130,7 +133,7 @@ function Reports() {
   }));
 
   async function handleExport(kind) {
-    setExporting(true);
+    setExporting(kind);
     setError(null);
     try {
       const range = getFinancialYearRange(fyStartYear);
@@ -151,7 +154,7 @@ function Reports() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
@@ -234,13 +237,18 @@ function Reports() {
               options={fyOptions}
             />
           </label>
-          <button type="button" className="btn-secondary" disabled={exporting} onClick={() => handleExport("csv")}>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={Boolean(exporting)}
+            onClick={() => handleExport("csv")}
+          >
             <IconDownload width={16} height={16} />
-            Category Summary (CSV)
+            {exporting === "csv" ? "Preparing..." : "Category Summary (CSV)"}
           </button>
-          <button type="button" disabled={exporting} onClick={() => handleExport("pdf")}>
+          <button type="button" disabled={Boolean(exporting)} onClick={() => handleExport("pdf")}>
             <IconDownload width={16} height={16} />
-            {exporting ? "Preparing..." : "Full Tax Report (PDF)"}
+            {exporting === "pdf" ? "Preparing..." : "Full Tax Report (PDF)"}
           </button>
         </div>
       </div>

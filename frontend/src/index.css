@@ -2079,9 +2079,6 @@ button.btn-danger:hover {
   align-items: flex-end;
   gap: 1.15rem;
   padding: 0 1.5rem 1.35rem;
-  /* Pull the avatar up so it straddles the band, the way a profile header
-     normally reads. */
-  margin-top: -44px;
 }
 
 .profile-avatar-btn {
@@ -2095,6 +2092,13 @@ button.btn-danger:hover {
   line-height: 0;
   box-shadow: 0 0 0 4px var(--color-surface), var(--shadow-card-hover);
   transition: transform 0.15s;
+  /* Pull only the avatar up so it straddles the band, the way a profile
+     header normally reads — sized for its own 88px, not for however tall
+     the name/email/badges next to it happen to be. That taller text block
+     used to get dragged up by the same amount (it shared this margin on the
+     parent flex row), landing the name inside the low-contrast band instead
+     of below it. */
+  margin-top: -44px;
 }
 
 .profile-avatar-btn:hover {

@@ -98,6 +98,7 @@ function Accounts() {
   }
 
   async function handleDelete(id) {
+    if (!window.confirm("Delete this account? This can't be undone.")) return;
     setError(null);
     try {
       await deleteAccount(id, token);
@@ -136,6 +137,13 @@ function Accounts() {
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              // Picking a bank fills this with its name as a starting point,
+              // not a final answer — select it on focus so typing replaces
+              // it outright instead of landing mid-word and concatenating
+              // into something like "HDFC BankSalary account".
+              onFocus={(e) => {
+                if (ALL_ACCOUNT_SOURCES.some((b) => b.label === form.name)) e.target.select();
+              }}
               placeholder="e.g. Salary account"
               required
             />

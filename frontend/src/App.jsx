@@ -33,6 +33,21 @@ function RequireAuth({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
+// The mirror image of RequireAuth: login/register make no sense once you're
+// already signed in, and used to render on top of the sidebar shell instead
+// of redirecting — a broken hybrid layout reachable via the back button or a
+// stale bookmark. Bounce straight to the dashboard instead.
+function RedirectIfAuthed({ children }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/" replace /> : children;
+}
+
+// Routes that are never wrapped in the sidebar shell, even for a signed-in
+// visitor — e.g. someone logged in on desktop who opens a password-reset
+// link from email is still allowed to finish that flow, just without the
+// sidebar rendering underneath it.
+const PLAIN_LAYOUT_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+
 function AppRoutes() {
   return (
     <Routes>
@@ -164,8 +179,22 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthed>
+            <Login />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <RedirectIfAuthed>
+            <Register />
+          </RedirectIfAuthed>
+        }
+      />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
@@ -186,13 +215,18 @@ function usePageViewTracking() {
   }, [isAuthenticated, token, location.pathname]);
 }
 
-// The sidebar layout only makes sense once logged in; logged-out pages
-// (login/register) get a plain top bar instead of a side-by-side shell.
+// The sidebar layout only makes sense once logged in, and never on a
+// PLAIN_LAYOUT_PATHS route — a signed-in visitor can still land on
+// /reset-password (an emailed link) and should see the plain auth card, not
+// the sidebar shell rendered underneath it.
 function Layout() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   usePageViewTracking();
 
-  if (!isAuthenticated) {
+  const isPlainLayout = !isAuthenticated || PLAIN_LAYOUT_PATHS.includes(location.pathname);
+
+  if (isPlainLayout) {
     return (
       <>
         <Navbar />

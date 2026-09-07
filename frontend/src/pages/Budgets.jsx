@@ -93,6 +93,7 @@ function Budgets() {
   }
 
   async function handleDelete(category) {
+    if (!window.confirm(`Delete the budget for "${category}"? This can't be undone.`)) return;
     setError(null);
     try {
       await deleteBudget(category, token);

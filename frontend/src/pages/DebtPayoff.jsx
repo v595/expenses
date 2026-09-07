@@ -85,6 +85,7 @@ function DebtPayoff() {
   }
 
   async function handleDelete(id) {
+    if (!window.confirm("Delete this debt? This can't be undone.")) return;
     setError(null);
     try {
       await deleteDebt(id, token);

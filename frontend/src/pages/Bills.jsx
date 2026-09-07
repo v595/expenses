@@ -143,6 +143,12 @@ function Bills() {
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              // Picking a bill type fills this in as a starting point — select
+              // it on focus so typing replaces it instead of concatenating
+              // into something like "ElectricityElectricity Bill".
+              onFocus={(e) => {
+                if (BILL_TYPE_OPTIONS.some((t) => t.label === form.name)) e.target.select();
+              }}
               placeholder="e.g. Electricity"
               required
             />
