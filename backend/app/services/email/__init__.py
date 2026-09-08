@@ -2,19 +2,24 @@
 
 Which driver is used is decided by the EMAIL_DRIVER env var and defaults to
 `console`, which needs no configuration at all: it logs the email instead of
-sending it, so password reset works locally with zero setup. Set
-EMAIL_DRIVER=smtp and the SMTP_* env vars (see services/email/smtp.py) to
-send real mail through any SMTP-capable provider."""
+sending it, so password reset works locally with zero setup.
+
+Two real drivers are available: `smtp` (any SMTP-capable provider) and
+`resend` (HTTPS API — see services/email/resend.py for why this exists:
+most PaaS hosts, including Render, block outbound SMTP ports entirely, so
+`smtp` fails there with "Network is unreachable" no matter how correct the
+credentials are). Prefer `resend` when deploying to a host that blocks SMTP."""
 
 import os
 
-from app.services.email import console, smtp, templates
+from app.services.email import console, resend, smtp, templates
 from app.services.email.base import EmailError
 
 DEFAULT_DRIVER = "console"
 DRIVERS = {
     console.NAME: console,
     smtp.NAME: smtp,
+    resend.NAME: resend,
 }
 
 __all__ = [
