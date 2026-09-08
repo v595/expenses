@@ -267,3 +267,22 @@ def test_reset_password_too_short_rejected(client):
     token = _issue_reset_token(client)
     response = client.post("/api/auth/reset-password", json={"token": token, "password": "abc"})
     assert response.status_code == 400
+
+
+def test_forgot_password_survives_email_send_failure(client, monkeypatch):
+    """Regression test: request_password_reset used to let an EmailError
+    (SMTP auth failure, unreachable host, ...) propagate uncaught, turning
+    a misconfigured email driver into a 500 on every reset request instead
+    of the intended generic "check your inbox" response."""
+    from app.services import auth_service, email as email_service
+
+    register(client)
+
+    def boom(*args, **kwargs):
+        raise email_service.EmailError("SMTP auth failed")
+
+    monkeypatch.setattr(email_service, "send", boom)
+
+    response = client.post("/api/auth/forgot-password", json={"email": "alice@example.com"})
+    assert response.status_code == 200
+    assert "reset link" in response.get_json()["message"]

@@ -212,8 +212,20 @@ def request_password_reset(email):
         token = issue_password_reset_token(user)
         reset_url = f"{Config.FRONTEND_URL}/reset-password?token={token}"
         subject, body = email_service.templates.password_reset_email(user["name"], reset_url)
-        email_service.send(user["email"], subject, body)
-        activity_log_model.log(user["id"], "Requested password reset", entity_type="security")
+        try:
+            email_service.send(user["email"], subject, body)
+        except email_service.EmailError as e:
+            # Fail open on the response — same generic message either way,
+            # so this endpoint still can't be used to probe which emails are
+            # registered or whether SMTP happens to be misconfigured right
+            # now. The actual reason (bad credentials, wrong host, blocked
+            # connection...) goes to the server log instead, since that's
+            # the only place it's actually useful — check Render's Logs tab.
+            from flask import current_app
+
+            current_app.logger.error("Password reset email to %s failed: %s", user["email"], e)
+        else:
+            activity_log_model.log(user["id"], "Requested password reset", entity_type="security")
 
 
 def reset_password(token, new_password):
